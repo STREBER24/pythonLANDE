@@ -3,14 +3,9 @@ import privateConfig
 import pandas as pd
 import requests
 import config
-import time
 import json
 import log
 import io
-
-def getDateString():
-      date = time.localtime()
-      return str(date.tm_year).zfill(4) + '_' + str(date.tm_mon).zfill(2) + '_' + str(date.tm_mday).zfill(2)
 
 class Profile():
       def __init__(self, keys: list=[], values: list=[]):
@@ -46,7 +41,7 @@ class LandeSession(requests.Session):
                         auth['_token'] = input.get('value')
             log.v('found token ' + str(auth['_token']))
             self.post(config.link + 'login', data=auth)
-            log.i('login finished')
+            log.v('login finished')
       def getTransactions(self):
             log.i('fetching transaction export ...')
             response = self.get(config.link + 'investor/transactions/export')
@@ -88,17 +83,19 @@ class LandeSession(requests.Session):
             io.open(filename, 'wb').write(response.content)
       def getContracts(self, dir: str=''):
             links = self.getContractLinks()
+            log.i('downloading all contracts ...')
             for link in links:
                   self.download(config.link + 'investor/investments/' + link, dir + link + '.pdf')
 
 if __name__ == '__main__':
+      date = log.getDateString()
       log.i('start main routine of "landeRequest.py"')
       session = LandeSession(privateConfig.auth)
       session.getContracts(config.contractsFile)
-      session.getProfile().to_json(config.profileFile % getDateString())
-      log.ensureDir(config.transactionsFile % getDateString())
-      session.getTransactions().to_csv(config.transactionsFile % getDateString(), index=False)
-      log.ensureDir(config.investmentsFile % getDateString())
-      session.getInvestments().to_csv(config.investmentsFile % getDateString(), index=False)
+      session.getProfile().to_json(config.profileFile % date)
+      log.ensureDir(config.transactionsFile % date)
+      session.getTransactions().to_csv(config.transactionsFile % date, index=False)
+      log.ensureDir(config.investmentsFile % date)
+      session.getInvestments().to_csv(config.investmentsFile % date, index=False)
       session.close()
       log.i('finished main routine of "landeRequest.py"')

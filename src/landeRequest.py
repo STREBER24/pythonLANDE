@@ -5,17 +5,12 @@ import requests
 import config
 import time
 import json
-import os
+import log
 import io
 
 def getDateString():
       date = time.localtime()
       return str(date.tm_year).zfill(4) + '_' + str(date.tm_mon).zfill(2) + '_' + str(date.tm_mday).zfill(2)
-
-def ensureDir(file: str):
-      dir = os.path.dirname(file)
-      if not os.path.isdir(dir):
-            os.mkdir(dir)
 
 class Profile():
       def __init__(self, keys: list=[], values: list=[]):
@@ -24,12 +19,12 @@ class Profile():
       def to_dict(self):
             return {key: value for key, value in zip(self.keys, self.values)}
       def to_json(self, filename: str):
-            ensureDir(filename)
+            log.ensureDir(filename)
             file = io.open(filename, 'w', encoding='utf-8')
             json.dump(self.to_dict(), file, indent=2, ensure_ascii=False)
             file.close()
       def to_csv(self, filename: str, sep: str=','):
-            ensureDir(filename)
+            log.ensureDir(filename)
             file = io.open(filename, 'w', encoding='utf-8')
             file.write(sep.join([str(i) for i in self.keys]))
             file.write('\n')
@@ -42,22 +37,30 @@ class Profile():
 
 class LandeSession(requests.Session):
       def __init__(self, auth: dict):
+            log.i('initiating LandeSession ...')
             super().__init__()
             response = self.get(config.link + 'login')
             soup = BeautifulSoup( response.content , 'html.parser')
             for input in soup.find_all('input'):
                   if input.get('name') == '_token':
                         auth['_token'] = input.get('value')
+            log.v('found token ' + str(auth['_token']))
             self.post(config.link + 'login', data=auth)
+            log.i('login finished')
       def getTransactions(self):
+            log.i('fetching transaction export ...')
             response = self.get(config.link + 'investor/transactions/export')
             dataframe = pd.read_excel(response.content)
+            log.v('fetching finished')
             return dataframe
       def getInvestments(self):
+            log.i('fetching investments export ...')
             response = self.get(config.link + 'investor/reports/investments')
             dataframe = pd.read_excel(response.content)
+            log.v('fetching finished')
             return dataframe
       def getProfile(self):
+            log.i('fetching profile ...')
             response = self.get(config.link + 'settings/profile')
             soup = BeautifulSoup( response.content , 'html.parser')
             for element in soup.find_all('div'):
@@ -65,17 +68,22 @@ class LandeSession(requests.Session):
                         wrapper = element
             keys = [i.string for i in wrapper.find_all('small')]
             values = [i.string for i in wrapper.find_all('div')]
+            log.v('fetching finished: found %d keys and %d values' % (len(keys), len(values)))
+            if len(keys) != len(values): log.w('mismatch between keys and values of profile')
             return Profile(keys, values)
       def getContractLinks(self):
+            log.i('fetching all contract links ...')
             response = self.get(config.link + 'investor/investments')
             soup = BeautifulSoup(response.content , 'html.parser')
             links = []
             for tag in soup.find_all('a'):
                   if tag.find('i') and tag.get('href')[:len(config.link)+21] == config.link + 'investor/investments/':
                         links.append(tag.get('href')[46:])
+            log.v('fetching finished: found %d links' % len(links))
             return links
       def download(self, link: str, filename: str):
-            ensureDir(filename)
+            log.v('downloading file from %s' % link)
+            log.ensureDir(filename)
             response = self.get(link)
             io.open(filename, 'wb').write(response.content)
       def getContracts(self, dir: str=''):
@@ -84,11 +92,13 @@ class LandeSession(requests.Session):
                   self.download(config.link + 'investor/investments/' + link, dir + link + '.pdf')
 
 if __name__ == '__main__':
+      log.i('start main routine of "landeRequest.py"')
       session = LandeSession(privateConfig.auth)
       session.getContracts(config.contractsFile)
       session.getProfile().to_json(config.profileFile % getDateString())
-      ensureDir(config.transactionsFile % getDateString())
+      log.ensureDir(config.transactionsFile % getDateString())
       session.getTransactions().to_csv(config.transactionsFile % getDateString(), index=False)
-      ensureDir(config.investmentsFile % getDateString())
+      log.ensureDir(config.investmentsFile % getDateString())
       session.getInvestments().to_csv(config.investmentsFile % getDateString(), index=False)
       session.close()
+      log.i('finished main routine of "landeRequest.py"')

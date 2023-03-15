@@ -214,7 +214,6 @@ class LandeSession(requests.Session):
             return False
             
 
-
 if __name__ == '__main__':
       date = log.getDateString()
       log.i('start main routine of "landeRequest.py"')
@@ -239,3 +238,4 @@ if __name__ == '__main__':
                         
       session.close()
       log.i('finished main routine of "landeRequest.py"')
+      log.pop('Executed LANDE AutoInvest sucessfully.')

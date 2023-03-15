@@ -1,7 +1,10 @@
+import tkinter.messagebox as popup
 import config
 import time
 import os
 import io
+
+TITLE = 'LANDE AutoInvest'
 
 def getDateString():
       date = time.localtime()
@@ -24,18 +27,25 @@ def v(msg: str):
     text = '[VERBOSE] ' + msg
     if config.loggingLevelFile    >= 3: appendFile(text)
     if config.loggingLevelConsole >= 3: print(text)
+    if config.loggingLevelPopup   >= 3: popup.showinfo(TITLE, msg)
 
 def i(msg: str):
     text = '[INFO]    ' + msg
     if config.loggingLevelFile    >= 2: appendFile(text)
     if config.loggingLevelConsole >= 2: print(text)
+    if config.loggingLevelPopup   >= 2: popup.showinfo(TITLE, msg)
 
 def w(msg: str):
     text = '[WARNING] ' + msg
     if config.loggingLevelFile    >= 1: appendFile(text)
     if config.loggingLevelConsole >= 1: print(text)
+    if config.loggingLevelPopup   >= 1: popup.showwarning(TITLE, msg)
 
 def e(msg: str):
     text = '[ERROR]   ' + msg
     if config.loggingLevelFile    >= 0: appendFile(text)
     if config.loggingLevelConsole >= 0: print(text)
+    if config.loggingLevelPopup   >= 0: popup.showerror(TITLE, msg)
+
+def pop(msg: str):
+    popup.showinfo(TITLE, msg)

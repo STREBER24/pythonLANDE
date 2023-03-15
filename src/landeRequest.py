@@ -139,7 +139,7 @@ class LandeSession(requests.Session):
             links = []
             for tag in soup.find_all('a'):
                   if tag.find('i') and tag.get('href')[:len(config.link)+21] == config.link + 'investor/investments/':
-                        links.append(tag.get('href')[46:])
+                        links.append(tag.get('href')[len(config.link)+21:])
             log.v('fetching finished: found %d links' % len(links))
             return links
       def download(self, link: str, filename: str):

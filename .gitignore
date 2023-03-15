@@ -5,3 +5,7 @@ src/privateConfig.py
 
 data
 logs
+
+dist
+build
+landeRequest.spec

@@ -7,4 +7,6 @@ To start the service change the values in ``src/config.py`` to your preferences 
 
 > auth = {'email': 'test@test.test', 'password': 'SUPER_SECURE_PASSWORD'}
 
-Then you can execute ``src/landeRequest.py``
+Then you can execute ``src/landeRequest.py`` or build an executable with
+
+> pyinstaller --onefile --windowed src/landeRequest.py

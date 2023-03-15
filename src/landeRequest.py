@@ -8,12 +8,14 @@ import bs4
 import io
 import re
 
+
 def saveJson(data, filename: str):
       log.v('saving json to "%s" ...' % filename)
       log.ensureDir(filename)
       file = io.open(filename, 'w', encoding='utf-8')
       json.dump(data, file, indent=2, ensure_ascii=False)
       file.close()
+
 
 class Profile():
       def __init__(self, keys: list=[], values: list=[]):
@@ -35,13 +37,13 @@ class Profile():
                   return self.values[index]
        
        
-       
 def matchRange(range: tuple[int|float|None, int|float|None], value: int|float):
       if range[0] != None and range[0] > value:
             return False
       if range[1] != None and range[1] < value:
             return False
       return True
+
 
 class SecondaryOffer():
       def __init__(self):
@@ -189,15 +191,17 @@ class LandeSession(requests.Session):
             log.v('fetching finished: found %d offers' % len(offers))
             return offers
 
+
 if __name__ == '__main__':
       date = log.getDateString()
       log.i('start main routine of "landeRequest.py"')
       session = LandeSession(privateConfig.auth)
-      
-                  
+              
       session.getContracts(config.contractsFile)
       
-      session.getProfile().to_json(config.profileFile % date)
+      profile = session.getProfile()
+      profile.to_json(config.profileFile % date)
+      balance = float(profile.to_dict().get('Balance').replace('€',''))
       
       log.ensureDir(config.transactionsFile % date)
       session.getTransactions().to_csv(config.transactionsFile % date, index=False)
@@ -208,7 +212,7 @@ if __name__ == '__main__':
       
       offers = session.getSecondaryMarketInfo()
       saveJson([i.to_dict() for i in offers], config.secondaryMarketFile % date)
-      if config.autoinvestEnabled:
+      if config.autoinvestEnabled and balance >= config.autoinvestAmount[0]:
             log.v('starting autoinvest ...')
             for i in offers:
                   if i.matchesAutoinvest():
@@ -218,7 +222,7 @@ if __name__ == '__main__':
                                     amount -= investments['Remaining Investment Amount'][j]
                         if amount > config.autoinvestAmount[0]:
                               session.downloadLoan(i.id(), config.loanFile)
-                              amount = min(amount, i.amount())
+                              amount = min(amount, i.amount(), balance)
                               log.i('investing %.2f€ in loan %s ...' % (amount, i.id()))
                               session.purchase(i.buyLink(), amount)
                               break

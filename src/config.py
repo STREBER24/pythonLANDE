@@ -15,3 +15,12 @@ loggingLevelConsole = 3
 
 # base link
 link = 'https://lande.finance/'
+
+# autoinvest settings
+autoinvestEnabled = True
+autoinvestAmount = (5,20)
+autoinvestRemaining = (2, 36)
+autoinvestInterest = (11, None)
+autoinvestLtv = (None, 55)
+autoinvestStatus = ['current']
+autoinvestCollateral = ['land', 'financial', 'livestock', 'machinery', 'harvest']

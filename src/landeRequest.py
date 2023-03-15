@@ -8,6 +8,13 @@ import bs4
 import io
 import re
 
+def saveJson(data, filename: str):
+      log.v('saving json to "%s" ...' % filename)
+      log.ensureDir(filename)
+      file = io.open(filename, 'w', encoding='utf-8')
+      json.dump(data, file, indent=2, ensure_ascii=False)
+      file.close()
+
 class Profile():
       def __init__(self, keys: list=[], values: list=[]):
             self.keys = keys
@@ -15,10 +22,7 @@ class Profile():
       def to_dict(self):
             return {key: value for key, value in zip(self.keys, self.values)}
       def to_json(self, filename: str):
-            log.ensureDir(filename)
-            file = io.open(filename, 'w', encoding='utf-8')
-            json.dump(self.to_dict(), file, indent=2, ensure_ascii=False)
-            file.close()
+            saveJson(self.to_dict(), filename)
       def to_csv(self, filename: str, sep: str=','):
             log.ensureDir(filename)
             file = io.open(filename, 'w', encoding='utf-8')
@@ -31,6 +35,14 @@ class Profile():
                   return self.values[index]
        
        
+       
+def matchRange(range: tuple[int|float|None, int|float|None], value: int|float):
+      if range[0] != None and range[0] > value:
+            return False
+      if range[1] != None and range[1] < value:
+            return False
+      return True
+
 class SecondaryOffer():
       def __init__(self):
             self.data: list[bs4.element.Tag] = []
@@ -61,13 +73,18 @@ class SecondaryOffer():
             return float(text[1:].replace(',',''))
       def buyLink(self):
             return str(self.data[9].find('a').get('href'))
+      def matchesAutoinvest(self):
+            if config.autoinvestAmount[0] > self.amount(): return False
+            if not matchRange(config.autoinvestRemaining, self.remaining()): return False
+            if not matchRange(config.autoinvestInterest, self.interest()): return False
+            if not matchRange(config.autoinvestLtv, self.ltv()): return False
+            if self.status() not in config.autoinvestStatus: return False
+            if self.collateral() not in config.autoinvestCollateral: return False
+            return True       
       def to_text_list(self):
             return [i.text.strip().lower() for i in self.data]
       def to_json(self, filename: str):
-            log.ensureDir(filename)
-            file = io.open(filename, 'w', encoding='utf-8')
-            json.dump(self.to_dict(), file, indent=2, ensure_ascii=False)
-            file.close()
+            saveJson(self.to_dict(), filename)
       def to_dict(self):
             return {'id': self.id(),
                     'collateral': self.collateral(),
@@ -131,12 +148,31 @@ class LandeSession(requests.Session):
             response = self.get(link)
             io.open(filename, 'wb').write(response.content)
       def downloadLoan(self, id: str, filePattern: str):
+            log.i('downloading raw loan page %s' % id)
             self.download(config.link + 'loans/' + id, filePattern % id)
       def getContracts(self, filename: str=''):
             links = self.getContractLinks()
             log.i('downloading all contracts ...')
             for link in links:
                   self.download(config.link + 'investor/investments/' + link, filename % link)
+      def purchase(self, buyLink: str, amount: float):
+            response = self.get(buyLink)
+            token = None
+            for form in bs4.BeautifulSoup(response.content , 'html.parser').find_all('form'):
+                  if form.get('action') == buyLink + '/purchase':
+                        for i in form.find_all('input'):
+                              if i.get('name') == '_token':
+                                    token = i.get('value')
+                        break
+            if token == None:
+                  log.e('no token on purchase form found')
+            else:
+                  log.i('sending amount of %.2f to %s ...' % (amount, buyLink + '/purchase'))
+                  response = self.post(buyLink + '/purchase', data={'_token': token, 'amount': amount})
+                  if response.ok: 
+                        log.i('finished with status code %d' % response.status_code)
+                  else:
+                        log.e('failed with status code %d' % response.status_code)
       def getSecondaryMarketInfo(self):
             log.i('fetching secondary market info ...')
             newOffers = [None]
@@ -152,25 +188,40 @@ class LandeSession(requests.Session):
                   page += 1
             log.v('fetching finished: found %d offers' % len(offers))
             return offers
-      def saveSecondaryMarketInfo(self, filename: str):
-            offers = [i.to_dict() for i in self.getSecondaryMarketInfo()]
-            log.ensureDir(filename)
-            file = io.open(filename, 'w', encoding='utf-8')
-            json.dump(offers, file, indent=2, ensure_ascii=False)
-            file.close()
-            log.v('saving offers finished')
 
 if __name__ == '__main__':
       date = log.getDateString()
       log.i('start main routine of "landeRequest.py"')
       session = LandeSession(privateConfig.auth)
-      session.saveSecondaryMarketInfo(config.secondaryMarketFile % date)
+      
+                  
       session.getContracts(config.contractsFile)
+      
       session.getProfile().to_json(config.profileFile % date)
+      
       log.ensureDir(config.transactionsFile % date)
       session.getTransactions().to_csv(config.transactionsFile % date, index=False)
+      
       log.ensureDir(config.investmentsFile % date)
-      session.getInvestments().to_csv(config.investmentsFile % date, index=False)
-      session.downloadLoan('230220-510996', config.loanFile)
+      investments = session.getInvestments()
+      investments.to_csv(config.investmentsFile % date, index=False)
+      
+      offers = session.getSecondaryMarketInfo()
+      saveJson([i.to_dict() for i in offers], config.secondaryMarketFile % date)
+      if config.autoinvestEnabled:
+            log.v('starting autoinvest ...')
+            for i in offers:
+                  if i.matchesAutoinvest():
+                        amount = config.autoinvestAmount[1]
+                        for j in investments.index:
+                              if investments['ID'][j] == i.id():
+                                    amount -= investments['Remaining Investment Amount'][j]
+                        if amount > config.autoinvestAmount[0]:
+                              session.downloadLoan(i.id(), config.loanFile)
+                              amount = min(amount, i.amount())
+                              log.i('investing %.2f€ in loan %s ...' % (amount, i.id()))
+                              session.purchase(i.buyLink(), amount)
+                              break
+                        
       session.close()
       log.i('finished main routine of "landeRequest.py"')

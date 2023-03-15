@@ -1,5 +1,8 @@
+# paths with %s being a loan info
+contractsFile = './data/contracts/contract-%s.pdf'
+loanFile = './data/loans/loan-%s.html'
+
 # paths with %s being a date string
-contractsFile = './data/contracts/contract-'
 profileFile = './data/profiles/profile_%s.json'
 transactionsFile = './data/transactions/transactions_%s.csv'
 investmentsFile = './data/investments/investments_%s.csv'

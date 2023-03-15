@@ -16,7 +16,7 @@ def ensureDir(file: str):
 def appendFile(text: str):
     date = getDateString()
     ensureDir(config.logFile % date)
-    file = io.open(config.logFile % date, 'a')
+    file = io.open(config.logFile % date, 'a', encoding='utf-8')
     file.write('\n%f %s' % (time.time(), text))
     file.close()
             

@@ -6,6 +6,7 @@ import json
 import log
 import bs4
 import io
+import re
 
 class Profile():
       def __init__(self, keys: list=[], values: list=[]):
@@ -28,14 +29,6 @@ class Profile():
       def get(self, index):
             if len(self.values) > index:
                   return self.values[index]
-
-
-def cleanString(text: str):
-      while text[:1] in [' ', '\n']:
-            text = text[1:]
-      while text[-1:] in [' ', '\n']:
-            text = text[:-1]
-      return text.lower()
        
        
 class SecondaryOffer():
@@ -45,23 +38,31 @@ class SecondaryOffer():
             self.data = list(html.find_all('td'))
             return self
       def id(self):
-            return cleanString(self.data[2].text)
+            return self.data[2].text.strip().lower()
       def collateral(self):
-            return cleanString(self.data[3].text)
+            return self.data[3].text.strip().lower()
       def interest(self):
-            return cleanString(self.data[4].text)
+            text = self.data[4].text.strip().lower()
+            if not re.fullmatch('^[0-9]+%$', text): log.w('invalid interest: "%s"' % text)
+            return int(text[:-1])
       def remaining(self):
-            return cleanString(self.data[5].text)
+            text = self.data[5].text.strip().lower()
+            if not re.fullmatch('^[0-9]+ m.$', text): log.w('invalid remaining terms: "%s"' % text)
+            return int(text[:-3])
       def ltv(self):
-            return cleanString(self.data[6].text)
+            text = self.data[6].text.strip().lower()
+            if not re.fullmatch('^[0-9]+%$', text): log.w('invalid ltv: "%s"' % text)
+            return int(text[:-1])
       def status(self):
-            return cleanString(self.data[7].text)
+            return self.data[7].text.strip().lower()
       def amount(self):
-            return cleanString(self.data[8].text)
+            text = self.data[8].text.strip().lower()
+            if not re.fullmatch('^€[0-9]+(,[0-9][0-9][0-9])*.[0-9][0-9]+$', text): log.w('invalid amount: "%s"' % text)
+            return float(text[1:].replace(',',''))
       def buyLink(self):
             return str(self.data[9].find('a').get('href'))
       def to_text_list(self):
-            return [cleanString(i.text) for i in self.data]
+            return [i.text.strip().lower() for i in self.data]
       def to_json(self, filename: str):
             log.ensureDir(filename)
             file = io.open(filename, 'w', encoding='utf-8')
@@ -70,6 +71,7 @@ class SecondaryOffer():
       def to_dict(self):
             return {'id': self.id(),
                     'collateral': self.collateral(),
+                    'interest': self.interest(),
                     'remaining': self.remaining(),
                     'ltv': self.ltv(),
                     'status': self.status(),
@@ -128,11 +130,13 @@ class LandeSession(requests.Session):
             log.ensureDir(filename)
             response = self.get(link)
             io.open(filename, 'wb').write(response.content)
-      def getContracts(self, dir: str=''):
+      def downloadLoan(self, id: str, filePattern: str):
+            self.download(config.link + 'loans/' + id, filePattern % id)
+      def getContracts(self, filename: str=''):
             links = self.getContractLinks()
             log.i('downloading all contracts ...')
             for link in links:
-                  self.download(config.link + 'investor/investments/' + link, dir + link + '.pdf')
+                  self.download(config.link + 'investor/investments/' + link, filename % link)
       def getSecondaryMarketInfo(self):
             log.i('fetching secondary market info ...')
             newOffers = [None]
@@ -167,5 +171,6 @@ if __name__ == '__main__':
       session.getTransactions().to_csv(config.transactionsFile % date, index=False)
       log.ensureDir(config.investmentsFile % date)
       session.getInvestments().to_csv(config.investmentsFile % date, index=False)
+      session.downloadLoan('230220-510996', config.loanFile)
       session.close()
       log.i('finished main routine of "landeRequest.py"')

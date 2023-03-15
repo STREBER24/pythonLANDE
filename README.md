@@ -7,4 +7,4 @@ To start the service change the values in ``src/config.py`` to your preferences 
 
 > auth = {'email': 'test@test.test', 'password': 'SUPER_SECURE_PASSWORD'}
 
-Then you can execute ``src/landeRequest.py``. If multiple investments have to be done, the file has to be executed multiple times.
+Then you can execute ``src/landeRequest.py``

@@ -190,30 +190,14 @@ class LandeSession(requests.Session):
                   page += 1
             log.v('fetching finished: found %d offers' % len(offers))
             return offers
-
-
-if __name__ == '__main__':
-      date = log.getDateString()
-      log.i('start main routine of "landeRequest.py"')
-      session = LandeSession(privateConfig.auth)
-              
-      session.getContracts(config.contractsFile)
-      
-      profile = session.getProfile()
-      profile.to_json(config.profileFile % date)
-      balance = float(profile.to_dict().get('Balance').replace('€',''))
-      
-      log.ensureDir(config.transactionsFile % date)
-      session.getTransactions().to_csv(config.transactionsFile % date, index=False)
-      
-      log.ensureDir(config.investmentsFile % date)
-      investments = session.getInvestments()
-      investments.to_csv(config.investmentsFile % date, index=False)
-      
-      offers = session.getSecondaryMarketInfo()
-      saveJson([i.to_dict() for i in offers], config.secondaryMarketFile % date)
-      if config.autoinvestEnabled and balance >= config.autoinvestAmount[0]:
-            log.v('starting autoinvest ...')
+      def autoinvest(self, offers: list[SecondaryOffer], investments: pd.DataFrame, balance: float):
+            if not config.autoinvestEnabled:
+                  log.i('autoinvest is disabled')
+                  return False
+            if balance < config.autoinvestAmount[0]:
+                  log.i('balance is below minimum autoinvest amount')
+                  return False
+            log.i('starting autoinvest ...')
             for i in offers:
                   if i.matchesAutoinvest():
                         amount = config.autoinvestAmount[1]
@@ -221,11 +205,37 @@ if __name__ == '__main__':
                               if investments['ID'][j] == i.id():
                                     amount -= investments['Remaining Investment Amount'][j]
                         if amount > config.autoinvestAmount[0]:
-                              session.downloadLoan(i.id(), config.loanFile)
+                              self.downloadLoan(i.id(), config.loanFile)
                               amount = min(amount, i.amount(), balance)
                               log.i('investing %.2f€ in loan %s ...' % (amount, i.id()))
-                              session.purchase(i.buyLink(), amount)
-                              break
+                              self.purchase(i.buyLink(), amount)
+                              return True
+            log.v('autoinvest finished because no matching offer was found')
+            return False
+            
+
+
+if __name__ == '__main__':
+      date = log.getDateString()
+      log.i('start main routine of "landeRequest.py"')
+      session = LandeSession(privateConfig.auth)
+      
+      invest = True
+      while invest:
+            profile = session.getProfile()
+            balance = float(profile.to_dict().get('Balance').replace('€',''))
+            transactions = session.getTransactions()
+            investments = session.getInvestments()
+            offers = session.getSecondaryMarketInfo()
+            invest = session.autoinvest(offers, investments, balance)
+            
+      log.ensureDir(config.investmentsFile % date)   
+      log.ensureDir(config.transactionsFile % date) 
+      transactions.to_csv(config.transactionsFile % date, index=False)
+      investments.to_csv(config.investmentsFile % date, index=False)
+      profile.to_json(config.profileFile % date)
+      session.getContracts(config.contractsFile)
+      saveJson([i.to_dict() for i in offers], config.secondaryMarketFile % date)
                         
       session.close()
       log.i('finished main routine of "landeRequest.py"')

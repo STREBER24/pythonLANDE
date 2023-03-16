@@ -1,6 +1,6 @@
 import keyring.util.platform_ as keyring_platform
+import tkinter as tk
 import keyring
-import getpass
 import log
 
 
@@ -11,9 +11,26 @@ NAMESPACE = 'LANDE-AutoInvest'
 
 def saveCredentials():
     log.i('prompting for user credentials ...')
-    keyring.set_password(NAMESPACE, MAIL, input('Mail: '))
-    keyring.set_password(NAMESPACE, PSWD, getpass.getpass())
+    root = tk.Tk()
+    root.title('LANDE Credentials')
+    tk.Label(root, text='E-Mail:').grid(row=0, column=0, pady=2)
+    tk.Label(root, text='Password:').grid(row=1, column=0, pady=2)
+    mail = tk.Entry(root)
+    mail.grid(row=0, column=1, pady=2)
+    pswd = tk.Entry(root, show='*')
+    pswd.grid(row=1, column=1, pady=2)
+    def submit():
+        storeCredentials(mail.get(), pswd.get())
+        root.destroy()
+    tk.Button(root, text='Save', command=submit).grid(row=2, column=0, pady=2, columnspan=2)
+    root.mainloop()
+
+
+def storeCredentials(mail: str, pswd: str):
+    keyring.set_password(NAMESPACE, MAIL, mail)
+    keyring.set_password(NAMESPACE, PSWD, pswd)
     log.i('saved credentials to %s' % keyring_platform.config_root())
+    
 
 
 def getCredentials():

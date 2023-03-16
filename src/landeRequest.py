@@ -172,6 +172,7 @@ class LandeSession(requests.Session):
                   log.i('sending amount of %.2f to %s ...' % (amount, buyLink + '/purchase'))
                   response = self.post(buyLink + '/purchase', data={'_token': token, 'amount': amount})
                   if response.ok: 
+                        log.pop('Executed purchase.')
                         log.i('finished with status code %d' % response.status_code)
                   else:
                         log.e('failed with status code %d' % response.status_code)

@@ -1,15 +1,13 @@
-from os.path import expanduser as path
-
 # paths with %s being a loan info
-contractsFile = path('~/Documents/Python/lande_reports/data/contracts/contract-%s.pdf')
-loanFile = path('~/Documents/Python/lande_reports/data/loans/loan-%s.html')
+contractsFile = './data/contracts/contract-%s.pdf'
+loanFile = './data/loans/loan-%s.html'
 
 # paths with %s being a date string
-profileFile = path('~/Documents/Python/lande_reports/data/profiles/profile_%s.json')
-transactionsFile = path('~/Documents/Python/lande_reports/data/transactions/transactions_%s.csv')
-investmentsFile = path('~/Documents/Python/lande_reports/data/investments/investments_%s.csv')
-secondaryMarketFile = path('~/Documents/Python/lande_reports/data/secondary_market/secondary_market_%s.json')
-logFile = path('~/Documents/Python/lande_reports/logs/log_%s.txt')
+profileFile = './data/profiles/profile_%s.json'
+transactionsFile = './data/transactions/transactions_%s.csv'
+investmentsFile = './data/investments/investments_%s.csv'
+secondaryMarketFile = './data/secondary_market/secondary_market_%s.json'
+logFile = './logs/log_%s.txt'
 
 # logging threshold from 0 (errors) to 3 (verbose)
 loggingLevelPopup = 0

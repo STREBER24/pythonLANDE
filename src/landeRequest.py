@@ -1,5 +1,5 @@
-import privateConfig
 import pandas as pd
+import credentials
 import requests
 import config
 import json
@@ -100,16 +100,21 @@ class SecondaryOffer():
 
 class LandeSession(requests.Session):
       def __init__(self, auth: dict):
+            self.authenticated = False
             log.i('initiating LandeSession ...')
             super().__init__()
             response = self.get(config.link + 'login')
-            soup = bs4.BeautifulSoup(response.content , 'html.parser')
+            soup = bs4.BeautifulSoup(response.content, 'html.parser')
             for input in soup.find_all('input'):
                   if input.get('name') == '_token':
                         auth['_token'] = input.get('value')
             log.v('found token ' + str(auth['_token']))
-            self.post(config.link + 'login', data=auth)
-            log.v('login finished')
+            response = self.post(config.link + 'login', data=auth)
+            if bs4.BeautifulSoup(response.content, 'html.parser').find('form', attrs={'action': 'https://lande.finance/logout'}) == None:
+                  log.e('login failed')
+            else:
+                  self.authenticated = True
+                  log.v('login finished')
       def getTransactions(self):
             log.i('fetching transaction export ...')
             response = self.get(config.link + 'investor/transactions/export')
@@ -125,7 +130,7 @@ class LandeSession(requests.Session):
       def getProfile(self):
             log.i('fetching profile ...')
             response = self.get(config.link + 'settings/profile')
-            soup = bs4.BeautifulSoup(response.content , 'html.parser')
+            soup = bs4.BeautifulSoup(response.content, 'html.parser')
             for element in soup.find_all('div'):
                   if element.get('class') == ['card', 'border-0', 'rounded-1', 'p-4', 'shadow-lg', 'mb-4']:
                         wrapper = element
@@ -218,7 +223,11 @@ class LandeSession(requests.Session):
 if __name__ == '__main__':
       date = log.getDateString()
       log.i('start main routine of "landeRequest.py"')
-      session = LandeSession(privateConfig.auth)
+      session = LandeSession(credentials.getCredentials())
+      
+      while not session.authenticated:
+            credentials.saveCredentials()
+            session = LandeSession(credentials.getCredentials())
       
       invest = True
       while invest:

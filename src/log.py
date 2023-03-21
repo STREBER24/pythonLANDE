@@ -6,18 +6,22 @@ import io
 
 TITLE = 'LANDE AutoInvest'
 
-def getDateString():
-      date = time.localtime()
-      return str(date.tm_year).zfill(4) + '_' + str(date.tm_mon).zfill(2) + '_' + str(date.tm_mday).zfill(2)
+def getTimeString(config: Configuration):
+    date = time.localtime()
+    string = ''
+    if config.newFileFrequency >= 1: string +=       str(date.tm_year).zfill(4)
+    if config.newFileFrequency >= 2: string += '_' + str(date.tm_mon ).zfill(2)
+    if config.newFileFrequency >= 3: string += '_' + str(date.tm_mday).zfill(2)
+    return string
 
 def ensureDir(file: str):
-      dir = os.path.dirname(file)
-      if not os.path.isdir(dir):
-            os.mkdir(dir)
-            i('created directory ' + dir)
+    dir = os.path.dirname(file)
+    if not os.path.isdir(dir):
+        os.mkdir(dir)
+        i('created directory ' + dir)
           
 def appendFile(config: Configuration, text: str):
-    date = getDateString()
+    date = getTimeString(config)
     ensureDir(config.logFile % date)
     file = io.open(config.logFile % date, 'a', encoding='utf-8')
     file.write('\n%f %s' % (time.time(), text))

@@ -233,7 +233,7 @@ if __name__ == '__main__':
       
       log.i(config, 'start main routine of "landeRequest.py"')
       session = LandeSession(config)
-      date = log.getDateString()
+      date = log.getTimeString(config)
       
       while not session.authenticated:
             credentials.saveCredentials()

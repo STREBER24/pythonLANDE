@@ -16,8 +16,11 @@ class Configuration:
         self.investmentsFile = './data/investments/investments_%s.csv'
         self.secondaryMarketFile = './data/secondary_market/secondary_market_%s.json'
         self.logFile = './logs/log_%s.txt'
+        
+        # can be daily (3), monthly (2), annual (1), never (0)
+        self.newFileFrequency = 3
 
-        # logging threshold from 0 (errors) to 3 (verbose)
+        # logging threshold from 0 (error) to 3 (verbose)
         self.loggingLevelPopup = 0
         self.loggingLevelFile = 2
         self.loggingLevelConsole = 3

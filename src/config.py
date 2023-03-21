@@ -52,7 +52,7 @@ class Configuration:
             'link': self.link,
             'autoinvestEnabled': self.autoinvestEnabled,
             'autoinvestAmount': self.autoinvestAmount,
-            'autoinvestremaining': self.autoinvestRemaining,
+            'autoinvestRemaining': self.autoinvestRemaining,
             'autoinvestInterest': self.autoinvestInterest,
             'autoinvestLtv': self.autoinvestLtv,
             'autoinvestStatus': self.autoinvestStatus,

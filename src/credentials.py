@@ -1,4 +1,5 @@
 import keyring.util.platform_ as keyring_platform
+from config import Configuration
 import tkinter as tk
 import keyring
 import log
@@ -9,8 +10,8 @@ PSWD = 'PASSWORD'
 NAMESPACE = 'LANDE-AutoInvest'
 
 
-def saveCredentials():
-    log.i('prompting for user credentials ...')
+def saveCredentials(config: Configuration):
+    log.i(config, 'prompting for user credentials ...')
     root = tk.Tk()
     root.title('LANDE Credentials')
     tk.Label(root, text='E-Mail:').grid(row=0, column=0, pady=2)
@@ -33,8 +34,8 @@ def storeCredentials(mail: str, pswd: str):
     
 
 
-def getCredentials():
-    log.i('loading credentials ...')
+def getCredentials(config: Configuration):
+    log.i(config, 'loading credentials ...')
     mail = keyring.get_password(NAMESPACE, MAIL)
     pswd = keyring.get_password(NAMESPACE, PSWD)
     if mail in [None, ''] or pswd in [None, '']:
@@ -45,4 +46,4 @@ def getCredentials():
 
 
 if __name__ == '__main__':
-    saveCredentials()
+    saveCredentials(Configuration())

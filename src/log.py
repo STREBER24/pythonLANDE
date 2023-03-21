@@ -1,5 +1,5 @@
 import tkinter.messagebox as popup
-import config
+from config import Configuration
 import time
 import os
 import io
@@ -16,34 +16,34 @@ def ensureDir(file: str):
             os.mkdir(dir)
             i('created directory ' + dir)
           
-def appendFile(text: str):
+def appendFile(config: Configuration, text: str):
     date = getDateString()
     ensureDir(config.logFile % date)
     file = io.open(config.logFile % date, 'a', encoding='utf-8')
     file.write('\n%f %s' % (time.time(), text))
     file.close()
             
-def v(msg: str):
+def v(config: Configuration, msg: str):
     text = '[VERBOSE] ' + msg
-    if config.loggingLevelFile    >= 3: appendFile(text)
+    if config.loggingLevelFile    >= 3: appendFile(config, text)
     if config.loggingLevelConsole >= 3: print(text)
     if config.loggingLevelPopup   >= 3: popup.showinfo(TITLE, msg)
 
-def i(msg: str):
+def i(config: Configuration, msg: str):
     text = '[INFO]    ' + msg
-    if config.loggingLevelFile    >= 2: appendFile(text)
+    if config.loggingLevelFile    >= 2: appendFile(config, text)
     if config.loggingLevelConsole >= 2: print(text)
     if config.loggingLevelPopup   >= 2: popup.showinfo(TITLE, msg)
 
-def w(msg: str):
+def w(config: Configuration, msg: str):
     text = '[WARNING] ' + msg
-    if config.loggingLevelFile    >= 1: appendFile(text)
+    if config.loggingLevelFile    >= 1: appendFile(config, text)
     if config.loggingLevelConsole >= 1: print(text)
     if config.loggingLevelPopup   >= 1: popup.showwarning(TITLE, msg)
 
-def e(msg: str):
+def e(config: Configuration, msg: str):
     text = '[ERROR]   ' + msg
-    if config.loggingLevelFile    >= 0: appendFile(text)
+    if config.loggingLevelFile    >= 0: appendFile(config, text)
     if config.loggingLevelConsole >= 0: print(text)
     if config.loggingLevelPopup   >= 0: popup.showerror(TITLE, msg)
 

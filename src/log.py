@@ -49,3 +49,6 @@ def e(config: Configuration, msg: str):
 
 def pop(msg: str):
     popup.showinfo(TITLE, msg)
+
+def confirm(msg: str):
+    return popup.askquestion(TITLE, msg) == 'yes'

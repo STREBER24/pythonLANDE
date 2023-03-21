@@ -227,7 +227,9 @@ class LandeSession(requests.Session):
 
 if __name__ == '__main__':
       config = Configuration()
-      if not config.load(): config.save()
+      if not config.load(): 
+            config.autoinvestEnabled = log.confirm('Enable AutoInvest?')
+            config.save()
       
       log.i(config, 'start main routine of "landeRequest.py"')
       session = LandeSession(config)

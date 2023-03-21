@@ -227,9 +227,11 @@ class LandeSession(requests.Session):
 
 if __name__ == '__main__':
       config = Configuration()
-      date = log.getDateString()
+      if not config.load(): config.save()
+      
       log.i(config, 'start main routine of "landeRequest.py"')
       session = LandeSession(config)
+      date = log.getDateString()
       
       while not session.authenticated:
             credentials.saveCredentials()

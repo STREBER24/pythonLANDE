@@ -1,4 +1,5 @@
 from config import Configuration
+from offer import Offer
 import pandas as pd
 import credentials
 import requests
@@ -6,7 +7,6 @@ import json
 import log
 import bs4
 import io
-import re
 
 
 def saveJson(data, filename: str, config: Configuration):
@@ -36,68 +36,6 @@ class Profile():
       def get(self, index):
             if len(self.values) > index:
                   return self.values[index]
-       
-       
-def matchRange(range: tuple[int|float|None, int|float|None], value: int|float):
-      if range[0] != None and range[0] > value:
-            return False
-      if range[1] != None and range[1] < value:
-            return False
-      return True
-
-
-class SecondaryOffer():
-      def __init__(self, config: Configuration):
-            self.config = config
-            self.data: list[bs4.element.Tag] = []
-      def parse(self, html: bs4.element.Tag):
-            self.data = list(html.find_all('td'))
-            return self
-      def id(self):
-            return self.data[2].text.strip().lower()
-      def collateral(self):
-            return self.data[3].text.strip().lower()
-      def interest(self):
-            text = self.data[4].text.strip().lower()
-            if not re.fullmatch('^[0-9]+%$', text): log.w(self.config, 'invalid interest: "%s"' % text)
-            return int(text[:-1])
-      def remaining(self):
-            text = self.data[5].text.strip().lower()
-            if not re.fullmatch('^[0-9]+ m.$', text): log.w(self.config, 'invalid remaining terms: "%s"' % text)
-            return int(text[:-3])
-      def ltv(self):
-            text = self.data[6].text.strip().lower()
-            if not re.fullmatch('^[0-9]+%$', text): log.w(self.config, 'invalid ltv: "%s"' % text)
-            return int(text[:-1])
-      def status(self):
-            return self.data[7].text.strip().lower()
-      def amount(self):
-            text = self.data[8].text.strip().lower()
-            if not re.fullmatch('^€[0-9]+(,[0-9][0-9][0-9])*.[0-9][0-9]+$', text): log.w(self.config, 'invalid amount: "%s"' % text)
-            return float(text[1:].replace(',',''))
-      def buyLink(self):
-            return str(self.data[9].find('a').get('href'))
-      def matchesAutoinvest(self):
-            if self.config.autoinvestAmount[0] > self.amount(): return False
-            if not matchRange(self.config.autoinvestRemaining, self.remaining()): return False
-            if not matchRange(self.config.autoinvestInterest, self.interest()): return False
-            if not matchRange(self.config.autoinvestLtv, self.ltv()): return False
-            if self.status() not in self.config.autoinvestStatus: return False
-            if self.collateral() not in self.config.autoinvestCollateral: return False
-            return True       
-      def to_text_list(self):
-            return [i.text.strip().lower() for i in self.data]
-      def to_json(self, filename: str):
-            saveJson(self.to_dict(), filename)
-      def to_dict(self):
-            return {'id': self.id(),
-                    'collateral': self.collateral(),
-                    'interest': self.interest(),
-                    'remaining': self.remaining(),
-                    'ltv': self.ltv(),
-                    'status': self.status(),
-                    'amount': self.amount(),
-                    'buyLink': self.buyLink()}
 
 
 class LandeSession(requests.Session):
@@ -189,19 +127,19 @@ class LandeSession(requests.Session):
       def getSecondaryMarketInfo(self):
             log.i(self.config, 'fetching secondary market info ...')
             newOffers = [None]
-            offers: list[SecondaryOffer] = []
+            offers: list[Offer] = []
             page = 1
             while len(newOffers) > 0:
                   log.v(self.config, 'loading page %d ...' % page)
                   response = self.get(self.config.link + 'investor/secondary-market', params={'page': page})
                   soup = bs4.BeautifulSoup(response.content , 'html.parser')
                   table = soup.find('table').find('tbody')
-                  newOffers = [SecondaryOffer(self.config).parse(i) for i in table.find_all('tr')]
+                  newOffers = [Offer(self.config).parseSecondary(i) for i in table.find_all('tr')]
                   offers += newOffers
                   page += 1
             log.v(self.config, 'fetching finished: found %d offers' % len(offers))
             return offers
-      def autoinvest(self, offers: list[SecondaryOffer], investments: pd.DataFrame, balance: float):
+      def autoinvest(self, offers: list[Offer], investments: pd.DataFrame, balance: float):
             if not self.config.autoinvestEnabled:
                   log.i(self.config, 'autoinvest is disabled')
                   return False
@@ -213,13 +151,13 @@ class LandeSession(requests.Session):
                   if i.matchesAutoinvest():
                         amount = self.config.autoinvestAmount[1]
                         for j in investments.index:
-                              if investments['ID'][j] == i.id():
+                              if investments['ID'][j] == i.id:
                                     amount -= investments['Remaining Investment Amount'][j]
                         if amount > self.config.autoinvestAmount[0]:
-                              self.downloadLoan(i.id(), self.config.loanFile)
-                              amount = min(amount, i.amount(), balance)
-                              log.i(self.config, 'investing %.2f€ in loan %s ...' % (amount, i.id()))
-                              self.purchase(i.buyLink(), amount)
+                              self.downloadLoan(i.id, self.config.loanFile)
+                              amount = min(amount, i.amount, balance)
+                              log.i(self.config, 'investing %.2f€ in loan %s ...' % (amount, i.id))
+                              self.purchase(i.buyLink, amount)
                               return True
             log.v(self.config, 'autoinvest finished because no matching offer was found')
             return False

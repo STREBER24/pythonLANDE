@@ -14,15 +14,15 @@ def getTimeString(config: Configuration):
     if config.newFileFrequency >= 3: string += '_' + str(date.tm_mday).zfill(2)
     return string
 
-def ensureDir(file: str):
+def ensureDir(config: Configuration, file: str):
     dir = os.path.dirname(file)
     if not os.path.isdir(dir):
         os.mkdir(dir)
-        i('created directory ' + dir)
+        i(config, 'created directory ' + dir)
           
 def appendFile(config: Configuration, text: str):
     date = getTimeString(config)
-    ensureDir(config.logFile % date)
+    ensureDir(config, config.logFile % date)
     file = io.open(config.logFile % date, 'a', encoding='utf-8')
     file.write('\n%f %s' % (time.time(), text))
     file.close()

@@ -15,6 +15,7 @@ class Configuration:
         self.transactionsFile = './data/transactions/transactions_%s.csv'
         self.investmentsFile = './data/investments/investments_%s.csv'
         self.secondaryMarketFile = './data/secondary_market/secondary_market_%s.json'
+        self.primaryMarketFile = './data/primary_market/primary_market_%s.json'
         self.logFile = './logs/log_%s.txt'
         
         # can be daily (3), monthly (2), annual (1), never (0)
@@ -45,6 +46,7 @@ class Configuration:
             'transactionsFile': self.transactionsFile,
             'investmentsFile': self.investmentsFile,
             'secondaryMarketFile': self.secondaryMarketFile,
+            'primaryMarketFile': self.primaryMarketFile,
             'logFile': self.logFile,
             'loggingLevelPopup': self.loggingLevelPopup,
             'loggingLevelFile': self.loggingLevelFile,
@@ -60,7 +62,7 @@ class Configuration:
         file = io.open(FILENAME, 'w', encoding='utf8')
         json.dump(data, file, indent=2, ensure_ascii=False)
         file.close()
-    
+        
     def load(self):
         if not os.path.isfile(FILENAME):
             return False
@@ -75,6 +77,7 @@ class Configuration:
         self.transactionsFile = data.get('transactionsFile')
         self.investmentsFile = data.get('investmentsFile')
         self.secondaryMarketFile = data.get('secondaryMarketFile')
+        self.primaryMarketFile = data.get('primaryMarketFile')
         self.logFile = data.get('logFile')
         self.loggingLevelPopup = data.get('loggingLevelPopup')
         self.loggingLevelFile = data.get('loggingLevelFile')
@@ -88,7 +91,7 @@ class Configuration:
         self.autoinvestStatus = data.get('autoinvestStatus')
         self.autoinvestCollateral = data.get('autoinvestCollateral')
         return True
-    
+
 if __name__ == '__main__':
     config = Configuration()
     print(config.load())

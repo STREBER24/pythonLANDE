@@ -12,8 +12,11 @@ class Offer():
         self.collateral = None
         self.remaining = None
         self.ltv = None
-        self.amount = None
+        self.availableAmount = None
+        self.fullAmount = None
         self.buyLink = None
+        self.status = None
+        self.interest = None
     def parseSecondary(self, html: bs4.element.Tag):
         self.data = list(html.find_all('td'))
         self.id = self.data[2].text.strip().lower()
@@ -22,8 +25,19 @@ class Offer():
         self.remaining = self.parseRemaining(self.data[5].text.strip().lower())
         self.ltv = self.parseLtv(self.data[6].text.strip().lower())
         self.status = self.data[7].text.strip().lower()
-        self.amount = self.data[8].text.strip().lower()
+        self.availableAmount = self.parseAmount(self.data[8].text.strip().lower())
         self.buyLink = str(self.data[9].find('a').get('href'))
+        return self
+    def parsePrimary(self, html: bs4.element.Tag):
+        self.data = list(html.find_all('td'))
+        self.id = self.data[2].find('a').text.strip().lower()
+        self.collateral = self.data[2].find('div').text.strip().lower()
+        self.interest = self.parseInterest(self.data[4].text.strip().lower())
+        self.remaining = self.parseRemaining(self.data[6].text.strip().lower())
+        self.ltv = self.parseLtv(self.data[5].text.strip().lower())
+        self.availableAmount, self.fullAmount = self.parsePartialAmount(self.data[3].text.lower())
+        self.buyLink = str(self.data[7].find('a').get('href'))
+        self.status = 'funding' if self.data[7].find('a').text.strip().lower()=='invest' else None
         return self
     def parseInterest(self, text: str):
         if re.fullmatch('^[0-9]+%$', text): 
@@ -41,6 +55,13 @@ class Offer():
         if re.fullmatch('^€[0-9]+(,[0-9][0-9][0-9])*.[0-9][0-9]+$', text): 
             return float(text[1:].replace(',',''))
         log.w(self.config, 'invalid amount: "%s"' % text)
+    def parsePartialAmount(self, text: str):
+        parts = text.split('/')
+        if len(parts) != 2:
+            log.w(self.config, 'invalid partial amount: "%s"' % text)
+        funded = float(parts[0].strip()[1:].replace(',',''))
+        full = float(parts[1].strip()[1:].replace(',',''))
+        return (full-funded, full)
     def matchesAutoinvest(self):
         if self.config.autoinvestAmount[0] > self.amount: return False
         if not matchRange(self.config.autoinvestRemaining, self.remaining): return False
@@ -58,7 +79,9 @@ class Offer():
                 'remaining': self.remaining,
                 'ltv': self.ltv,
                 'status': self.status,
-                'amount': self.amount,
+                'amount': {
+                    'available': self.availableAmount,
+                    'full': self.fullAmount},
                 'buyLink': self.buyLink}
     
 

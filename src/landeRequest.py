@@ -11,7 +11,7 @@ import io
 
 def saveJson(data, filename: str, config: Configuration):
       log.v(config, 'saving json to "%s" ...' % filename)
-      log.ensureDir(filename)
+      log.ensureDir(config, filename)
       file = io.open(filename, 'w', encoding='utf-8')
       json.dump(data, file, indent=2, ensure_ascii=False)
       file.close()
@@ -27,7 +27,7 @@ class Profile():
       def to_json(self, filename: str):
             saveJson(self.to_dict(), filename, self.config)
       def to_csv(self, filename: str, sep: str=','):
-            log.ensureDir(filename)
+            log.ensureDir(self.config, filename)
             file = io.open(filename, 'w', encoding='utf-8')
             file.write(sep.join([str(i) for i in self.keys]))
             file.write('\n')
@@ -94,7 +94,7 @@ class LandeSession(requests.Session):
             return links
       def download(self, link: str, filename: str):
             log.v(self.config, 'downloading file from %s' % link)
-            log.ensureDir(filename)
+            log.ensureDir(self.config, filename)
             response = self.get(link)
             io.open(filename, 'wb').write(response.content)
       def downloadLoan(self, id: str, filePattern: str):
@@ -139,6 +139,23 @@ class LandeSession(requests.Session):
                   page += 1
             log.v(self.config, 'fetching finished: found %d offers' % len(offers))
             return offers
+      def getPrimaryMarketInfo(self, all=False):
+            log.i(self.config, 'fetching primary market info ...')
+            newOffers = [None]
+            offers: list[Offer] = []
+            page = 1
+            while len(newOffers) > 0:
+                  log.v(self.config, 'loading page %d ...' % page)
+                  response = self.get(self.config.link + 'investor/loans', params={'page': page})
+                  soup = bs4.BeautifulSoup(response.content , 'html.parser')
+                  table = soup.find('table')
+                  newOffers = [Offer(self.config).parsePrimary(i) for i in table.find_all('tr')[1:]]
+                  if not all:
+                        newOffers = list(filter(lambda x: x.status != None, newOffers))
+                  offers += newOffers
+                  page += 1
+            log.v(self.config, 'fetching finished: found %d offers' % len(offers))
+            return offers
       def autoinvest(self, offers: list[Offer], investments: pd.DataFrame, balance: float):
             if not self.config.autoinvestEnabled:
                   log.i(self.config, 'autoinvest is disabled')
@@ -155,10 +172,17 @@ class LandeSession(requests.Session):
                                     amount -= investments['Remaining Investment Amount'][j]
                         if amount > self.config.autoinvestAmount[0]:
                               self.downloadLoan(i.id, self.config.loanFile)
-                              amount = min(amount, i.amount, balance)
+                              amount = min(amount, i.availableAmount, balance)
                               log.i(self.config, 'investing %.2f€ in loan %s ...' % (amount, i.id))
                               self.purchase(i.buyLink, amount)
                               return True
             log.v(self.config, 'autoinvest finished because no matching offer was found')
             return False
             
+
+if __name__ == '__main__':
+      config = Configuration()
+      session = LandeSession(config)
+      session.getPrimaryMarketInfo()
+      session.close()
+      

@@ -37,8 +37,8 @@ if __name__ == '__main__':
       investments.to_csv(config.investmentsFile % date, index=False)
       profile.to_json(config.profileFile % date)
       session.getContracts(config.contractsFile)
-      request.saveJson([i.to_dict() for i in primaryOffers], config.primaryMarketFile % date, config)
-      request.saveJson([i.to_dict() for i in secondaryOffers], config.secondaryMarketFile % date, config)
+      request.saveJson([i.toDict() for i in primaryOffers], config.primaryMarketFile % date, config)
+      request.saveJson([i.toDict() for i in secondaryOffers], config.secondaryMarketFile % date, config)
                         
       session.close()
       log.i(config, 'finished main routine')

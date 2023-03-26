@@ -1,4 +1,5 @@
 from config import Configuration
+import requests
 import log
 import bs4
 import re
@@ -14,31 +15,19 @@ class Offer():
         self.ltv = None
         self.availableAmount = None
         self.fullAmount = None
-        self.buyLink = None
         self.status = None
         self.interest = None
-    def parseSecondary(self, html: bs4.element.Tag):
-        self.data = list(html.find_all('td'))
-        self.id = self.data[2].text.strip().lower()
-        self.collateral = self.data[3].text.strip().lower()
-        self.interest = self.parseInterest(self.data[4].text.strip().lower())
-        self.remaining = self.parseRemaining(self.data[5].text.strip().lower())
-        self.ltv = self.parseLtv(self.data[6].text.strip().lower())
-        self.status = self.data[7].text.strip().lower()
-        self.availableAmount = self.parseAmount(self.data[8].text.strip().lower())
-        self.buyLink = str(self.data[9].find('a').get('href'))
-        return self
-    def parsePrimary(self, html: bs4.element.Tag):
-        self.data = list(html.find_all('td'))
-        self.id = self.data[2].find('a').text.strip().lower()
-        self.collateral = self.data[2].find('div').text.strip().lower()
-        self.interest = self.parseInterest(self.data[4].text.strip().lower())
-        self.remaining = self.parseRemaining(self.data[6].text.strip().lower())
-        self.ltv = self.parseLtv(self.data[5].text.strip().lower())
-        self.availableAmount, self.fullAmount = self.parsePartialAmount(self.data[3].text.lower())
-        self.buyLink = str(self.data[7].find('a').get('href'))
-        self.status = 'funding' if self.data[7].find('a').text.strip().lower()=='invest' else None
-        return self
+    def toDict(self):
+        return {
+            'id': self.id,
+            'collateral': self.collateral,
+            'interest': self.interest,
+            'remaining': self.remaining,
+            'ltv': self.ltv,
+            'status': self.status,
+            'amount': {
+                'available': self.availableAmount,
+                'full': self.fullAmount}}
     def parseInterest(self, text: str):
         if re.fullmatch('^[0-9]+%$', text): 
             return int(text[:-1])
@@ -52,6 +41,7 @@ class Offer():
             return int(text[:-1])
         log.w(self.config, 'invalid ltv: "%s"' % text)
     def parseAmount(self, text: str):
+        text = text.strip().lower()
         if re.fullmatch('^€[0-9]+(,[0-9][0-9][0-9])*.[0-9][0-9]+$', text): 
             return float(text[1:].replace(',',''))
         log.w(self.config, 'invalid amount: "%s"' % text)
@@ -59,8 +49,8 @@ class Offer():
         parts = text.split('/')
         if len(parts) != 2:
             log.w(self.config, 'invalid partial amount: "%s"' % text)
-        funded = float(parts[0].strip()[1:].replace(',',''))
-        full = float(parts[1].strip()[1:].replace(',',''))
+        funded = self.parseAmount(parts[0])
+        full = self.parseAmount(parts[1])
         return (full-funded, full)
     def matchesAutoinvest(self):
         if self.config.autoinvestAmount[0] > self.availableAmount: return False
@@ -69,20 +59,35 @@ class Offer():
         if not matchRange(self.config.autoinvestLtv, self.ltv): return False
         if self.status not in self.config.autoinvestStatus: return False
         if self.collateral not in self.config.autoinvestCollateral: return False
-        return True       
-    def to_text_list(self):
-        return [i.text.strip().lower() for i in self.data]
-    def to_dict(self):
-        return {'id': self.id,
-                'collateral': self.collateral,
-                'interest': self.interest,
-                'remaining': self.remaining,
-                'ltv': self.ltv,
-                'status': self.status,
-                'amount': {
-                    'available': self.availableAmount,
-                    'full': self.fullAmount},
-                'buyLink': self.buyLink}
+        return True 
+
+
+class SecondaryOffer(Offer):
+    def __init__(self, config: Configuration, html: bs4.element.Tag):
+        super().__init__(config)
+        self.data = list(html.find_all('td'))
+        self.id = self.data[2].text.strip().lower()
+        self.collateral = self.data[3].text.strip().lower()
+        self.interest = self.parseInterest(self.data[4].text.strip().lower())
+        self.remaining = self.parseRemaining(self.data[5].text.strip().lower())
+        self.ltv = self.parseLtv(self.data[6].text.strip().lower())
+        self.status = self.data[7].text.strip().lower()
+        self.availableAmount = self.parseAmount(self.data[8].text)
+        self.buyLink = str(self.data[9].find('a').get('href'))
+
+
+class PrimaryOffer(Offer):
+    def __init__(self, config: Configuration, html: bs4.element.Tag):
+        super().__init__(config)
+        self.data = list(html.find_all('td'))
+        self.id = self.data[2].find('a').text.strip().lower()
+        self.collateral = self.data[2].find('div').text.strip().lower()
+        self.interest = self.parseInterest(self.data[4].text.strip().lower())
+        self.remaining = self.parseRemaining(self.data[6].text.strip().lower())
+        self.ltv = self.parseLtv(self.data[5].text.strip().lower())
+        self.availableAmount, self.fullAmount = self.parsePartialAmount(self.data[3].text)
+        self.buyLink = str(self.data[7].find('a').get('href'))
+        self.status = 'funding' if self.data[7].find('a').text.strip().lower()=='invest' else None
     
 
 def matchRange(range: tuple[int|float|None, int|float|None], value: int|float):

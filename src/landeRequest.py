@@ -1,8 +1,8 @@
 from config import Configuration
-from offer import Offer
 import pandas as pd
 import credentials
 import requests
+import offer
 import json
 import log
 import bs4
@@ -127,14 +127,14 @@ class LandeSession(requests.Session):
       def getSecondaryMarketInfo(self):
             log.i(self.config, 'fetching secondary market info ...')
             newOffers = [None]
-            offers: list[Offer] = []
+            offers: list[offer.SecondaryOffer] = []
             page = 1
             while len(newOffers) > 0:
                   log.v(self.config, 'loading page %d ...' % page)
                   response = self.get(self.config.link + 'investor/secondary-market', params={'page': page})
                   soup = bs4.BeautifulSoup(response.content , 'html.parser')
                   table = soup.find('table').find('tbody')
-                  newOffers = [Offer(self.config).parseSecondary(i) for i in table.find_all('tr')]
+                  newOffers = [offer.SecondaryOffer(self.config, i) for i in table.find_all('tr')]
                   offers += newOffers
                   page += 1
             log.v(self.config, 'fetching finished: found %d offers' % len(offers))
@@ -142,21 +142,21 @@ class LandeSession(requests.Session):
       def getPrimaryMarketInfo(self, all=False):
             log.i(self.config, 'fetching primary market info ...')
             newOffers = [None]
-            offers: list[Offer] = []
+            offers: list[offer.PrimaryOffer] = []
             page = 1
             while len(newOffers) > 0:
                   log.v(self.config, 'loading page %d ...' % page)
                   response = self.get(self.config.link + 'investor/loans', params={'page': page})
                   soup = bs4.BeautifulSoup(response.content , 'html.parser')
                   table = soup.find('table')
-                  newOffers = [Offer(self.config).parsePrimary(i) for i in table.find_all('tr')[1:]]
+                  newOffers = [offer.PrimaryOffer(self.config, i) for i in table.find_all('tr')[1:]]
                   if not all:
                         newOffers = list(filter(lambda x: x.status != None, newOffers))
                   offers += newOffers
                   page += 1
             log.v(self.config, 'fetching finished: found %d offers' % len(offers))
             return offers
-      def autoinvest(self, offers: list[Offer], investments: pd.DataFrame, balance: float):
+      def autoinvest(self, offers: list[offer.Offer], investments: pd.DataFrame, balance: float):
             if not self.config.autoinvestEnabled:
                   log.i(self.config, 'autoinvest is disabled')
                   return False

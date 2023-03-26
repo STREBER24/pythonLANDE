@@ -3,40 +3,31 @@ import io
 import os
 
 FILENAME = os.path.expanduser('~/.lande')
+DEFAULT = {
+    'contractsFile': './data/contracts/contract-%s.pdf',
+    'loanFile': './data/loans/loan-%s.html',
+    'profileFile': './data/profiles/profile_%s.json',
+    'transactionsFile': './data/transactions/transactions_%s.csv',
+    'investmentsFile': './data/investments/investments_%s.csv',
+    'secondaryMarketFile': './data/secondary_market/secondary_market_%s.json',
+    'primaryMarketFile': './data/primary_market/primary_market_%s.json',
+    'logFile': './logs/log_%s.txt',
+    'newFileFrequency': 3,
+    'loggingLevelPopup': 0,
+    'loggingLevelFile': 2,
+    'loggingLevelConsole': 3,
+    'link': 'https://lande.finance/',
+    'autoinvestEnabled': True,
+    'autoinvestAmount': (5,20),
+    'autoinvestRemaining': (2, 36),
+    'autoinvestInterest': (11, None),
+    'autoinvestLtv': (None, 55),
+    'autoinvestStatus': ['current'],
+    'autoinvestCollateral': ['land', 'financial', 'livestock', 'machinery', 'harvest']}
 
 class Configuration:
     def __init__(self):
-        # paths with %s being a loan info
-        self.contractsFile = './data/contracts/contract-%s.pdf'
-        self.loanFile = './data/loans/loan-%s.html'
-
-        # paths with %s being a date string
-        self.profileFile = './data/profiles/profile_%s.json'
-        self.transactionsFile = './data/transactions/transactions_%s.csv'
-        self.investmentsFile = './data/investments/investments_%s.csv'
-        self.secondaryMarketFile = './data/secondary_market/secondary_market_%s.json'
-        self.primaryMarketFile = './data/primary_market/primary_market_%s.json'
-        self.logFile = './logs/log_%s.txt'
-        
-        # can be daily (3), monthly (2), annual (1), never (0)
-        self.newFileFrequency = 3
-
-        # logging threshold from 0 (error) to 3 (verbose)
-        self.loggingLevelPopup = 0
-        self.loggingLevelFile = 2
-        self.loggingLevelConsole = 3
-
-        # base link
-        self.link = 'https://lande.finance/'
-
-        # autoinvest settings
-        self.autoinvestEnabled = True
-        self.autoinvestAmount = (5,20)
-        self.autoinvestRemaining = (2, 36)
-        self.autoinvestInterest = (11, None)
-        self.autoinvestLtv = (None, 55)
-        self.autoinvestStatus = ['current']
-        self.autoinvestCollateral = ['land', 'financial', 'livestock', 'machinery', 'harvest']
+        self.parse(DEFAULT)
         
     def save(self):
         data = {
@@ -48,6 +39,7 @@ class Configuration:
             'secondaryMarketFile': self.secondaryMarketFile,
             'primaryMarketFile': self.primaryMarketFile,
             'logFile': self.logFile,
+            'newFileFrequency': self.newFileFrequency,
             'loggingLevelPopup': self.loggingLevelPopup,
             'loggingLevelFile': self.loggingLevelFile,
             'loggingLevelConsole': self.loggingLevelConsole,
@@ -70,27 +62,36 @@ class Configuration:
         file = io.open(FILENAME, encoding='utf8')
         data: dict = json.load(file)
         file.close()
-        
-        self.contractsFile = data.get('contractsFile')
-        self.loanFile = data.get('loanFile')
-        self.profileFile = data.get('profileFile')
-        self.transactionsFile = data.get('transactionsFile')
-        self.investmentsFile = data.get('investmentsFile')
-        self.secondaryMarketFile = data.get('secondaryMarketFile')
-        self.primaryMarketFile = data.get('primaryMarketFile')
-        self.logFile = data.get('logFile')
-        self.loggingLevelPopup = data.get('loggingLevelPopup')
-        self.loggingLevelFile = data.get('loggingLevelFile')
-        self.loggingLevelConsole = data.get('loggingLevelConsole')
-        self.link = data.get('link')
-        self.autoinvestEnabled = data.get('autoinvestEnabled')
-        self.autoinvestAmount = data.get('autoinvestAmount')
-        self.autoinvestRemaining = data.get('autoinvestRemaining')
-        self.autoinvestInterest = data.get('autoinvestInterest')
-        self.autoinvestLtv = data.get('autoinvestLtv')
-        self.autoinvestStatus = data.get('autoinvestStatus')
-        self.autoinvestCollateral = data.get('autoinvestCollateral')
+        self.parse(data)
         return True
+    
+    def get(self, data: dict, key: str):
+        value = data.get(key)
+        if value == None:
+            return DEFAULT.get(key)
+        return value
+    
+    def parse(self, data: dict):
+        self.contractsFile = self.get(data, 'contractsFile')
+        self.loanFile = self.get(data, 'loanFile')
+        self.profileFile = self.get(data, 'profileFile')
+        self.transactionsFile = self.get(data, 'transactionsFile')
+        self.investmentsFile = self.get(data, 'investmentsFile')
+        self.secondaryMarketFile = self.get(data, 'secondaryMarketFile')
+        self.primaryMarketFile = self.get(data, 'primaryMarketFile')
+        self.logFile = self.get(data, 'logFile')
+        self.newFileFrequency = self.get(data, 'newFileFrequency')
+        self.loggingLevelPopup = self.get(data, 'loggingLevelPopup')
+        self.loggingLevelFile = self.get(data, 'loggingLevelFile')
+        self.loggingLevelConsole = self.get(data, 'loggingLevelConsole')
+        self.link = self.get(data, 'link')
+        self.autoinvestEnabled = self.get(data, 'autoinvestEnabled')
+        self.autoinvestAmount = self.get(data, 'autoinvestAmount')
+        self.autoinvestRemaining = self.get(data, 'autoinvestRemaining')
+        self.autoinvestInterest = self.get(data, 'autoinvestInterest')
+        self.autoinvestLtv = self.get(data, 'autoinvestLtv')
+        self.autoinvestStatus = self.get(data, 'autoinvestStatus')
+        self.autoinvestCollateral = self.get(data, 'autoinvestCollateral')
 
 if __name__ == '__main__':
     config = Configuration()

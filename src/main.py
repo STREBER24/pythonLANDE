@@ -1,6 +1,7 @@
 from config import Configuration
 import landeRequest as request
 import credentials
+import updater
 import log
 
 if __name__ == '__main__':
@@ -8,6 +9,9 @@ if __name__ == '__main__':
       if not config.load(): 
             config.autoinvestEnabled = log.confirm('Enable AutoInvest?')
             config.save()
+      
+      if config.checkUpdates:
+            updater.latest(config)
       
       log.i(config, 'start main routine')
       session = request.LandeSession(config)

@@ -13,7 +13,7 @@ DEFAULT = {
     'primaryMarketFile': './data/primary_market/primary_market_%s.json',
     'logFile': './logs/log_%s.txt',
     'newFileFrequency': 3,
-    'loggingLevelPopup': 0,
+    'loggingLevelPopup': 1,
     'loggingLevelFile': 2,
     'loggingLevelConsole': 3,
     'link': 'https://lande.finance/',
@@ -23,7 +23,8 @@ DEFAULT = {
     'autoinvestInterest': (11, None),
     'autoinvestLtv': (None, 55),
     'autoinvestStatus': ['current'],
-    'autoinvestCollateral': ['land', 'financial', 'livestock', 'machinery', 'harvest']}
+    'autoinvestCollateral': ['land', 'financial', 'livestock', 'machinery', 'harvest'],
+    'checkUpdates': True}
 
 class Configuration:
     def __init__(self):
@@ -50,7 +51,8 @@ class Configuration:
             'autoinvestInterest': self.autoinvestInterest,
             'autoinvestLtv': self.autoinvestLtv,
             'autoinvestStatus': self.autoinvestStatus,
-            'autoinvestCollateral': self.autoinvestCollateral}
+            'autoinvestCollateral': self.autoinvestCollateral,
+            'checkUpdates': self.checkUpdates}
         file = io.open(FILENAME, 'w', encoding='utf8')
         json.dump(data, file, indent=2, ensure_ascii=False)
         file.close()
@@ -92,6 +94,7 @@ class Configuration:
         self.autoinvestLtv = self.get(data, 'autoinvestLtv')
         self.autoinvestStatus = self.get(data, 'autoinvestStatus')
         self.autoinvestCollateral = self.get(data, 'autoinvestCollateral')
+        self.checkUpdates = self.get(data, 'checkUpdates')
 
 if __name__ == '__main__':
     config = Configuration()

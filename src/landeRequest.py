@@ -105,25 +105,6 @@ class LandeSession(requests.Session):
             log.i(self.config, 'downloading all contracts ...')
             for link in links:
                   self.download(self.config.link + 'investor/investments/' + link, filename % link)
-      def purchase(self, buyLink: str, amount: float):
-            response = self.get(buyLink)
-            token = None
-            for form in bs4.BeautifulSoup(response.content , 'html.parser').find_all('form'):
-                  if form.get('action') == buyLink + '/purchase':
-                        for i in form.find_all('input'):
-                              if i.get('name') == '_token':
-                                    token = i.get('value')
-                        break
-            if token == None:
-                  log.e(self.config, 'no token on purchase form found')
-            else:
-                  log.i(self.config, 'sending amount of %.2f to %s ...' % (amount, buyLink + '/purchase'))
-                  response = self.post(buyLink + '/purchase', data={'_token': token, 'amount': amount})
-                  if response.ok: 
-                        log.pop('Executed purchase.')
-                        log.i(self.config, 'finished with status code %d' % response.status_code)
-                  else:
-                        log.e(self.config, 'failed with status code %d' % response.status_code)
       def getSecondaryMarketInfo(self):
             log.i(self.config, 'fetching secondary market info ...')
             newOffers = [None]
@@ -174,7 +155,7 @@ class LandeSession(requests.Session):
                               self.downloadLoan(i.id, self.config.loanFile)
                               amount = min(amount, i.availableAmount, balance)
                               log.i(self.config, 'investing %.2f€ in loan %s ...' % (amount, i.id))
-                              self.purchase(i.buyLink, amount)
+                              i.buy(self, amount)
                               return True
             log.v(self.config, 'autoinvest finished because no matching offer was found')
             return False
@@ -183,6 +164,6 @@ class LandeSession(requests.Session):
 if __name__ == '__main__':
       config = Configuration()
       session = LandeSession(config)
-      session.getPrimaryMarketInfo()
+      session.getPrimaryMarketInfo()[0].buy(session, 1)
       session.close()
       

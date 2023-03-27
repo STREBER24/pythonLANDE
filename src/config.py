@@ -24,7 +24,8 @@ DEFAULT = {
     'autoinvestLtv': (None, 55),
     'autoinvestStatus': ['current'],
     'autoinvestCollateral': ['land', 'financial', 'livestock', 'machinery', 'harvest'],
-    'checkUpdates': True}
+    'checkUpdates': True,
+    'notification': 'plyer'}
 
 class Configuration:
     def __init__(self):
@@ -52,7 +53,8 @@ class Configuration:
             'autoinvestLtv': self.autoinvestLtv,
             'autoinvestStatus': self.autoinvestStatus,
             'autoinvestCollateral': self.autoinvestCollateral,
-            'checkUpdates': self.checkUpdates}
+            'checkUpdates': self.checkUpdates,
+            'notification': self.notification}
         file = io.open(FILENAME, 'w', encoding='utf8')
         json.dump(data, file, indent=2, ensure_ascii=False)
         file.close()
@@ -95,6 +97,7 @@ class Configuration:
         self.autoinvestStatus = self.get(data, 'autoinvestStatus')
         self.autoinvestCollateral = self.get(data, 'autoinvestCollateral')
         self.checkUpdates = self.get(data, 'checkUpdates')
+        self.notification = self.get(data, 'notification')
 
 if __name__ == '__main__':
     config = Configuration()

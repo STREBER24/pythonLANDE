@@ -1,4 +1,4 @@
-from config import Configuration
+from config import Configuration, FILENAME
 import landeRequest as request
 import credentials
 import updater
@@ -7,8 +7,9 @@ import log
 if __name__ == '__main__':
       config = Configuration()
       if not config.load(): 
-            config.autoinvestEnabled = log.confirm('Enable AutoInvest?')
+            config.autoinvestEnabled = log.confirm(config, 'Enable AutoInvest?')
             config.save()
+            log.pop(config, 'saved config to %s' % FILENAME)
       
       if config.checkUpdates:
             updater.latest(config)
@@ -42,4 +43,4 @@ if __name__ == '__main__':
                         
       session.close()
       log.i(config, 'finished main routine')
-      log.pop('Executed LANDE AutoInvest sucessfully.')
+      log.pop(config, 'Executed LANDE AutoInvest sucessfully.')

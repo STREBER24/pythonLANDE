@@ -91,7 +91,7 @@ class SecondaryOffer(Offer):
             log.i(self.config, 'sending amount of %.2f to %s ...' % (amount, self.buyLink + '/purchase'))
             response = session.post(self.buyLink + '/purchase', data={'_token': token, 'amount': amount})
             if response.ok: 
-                log.pop('Executed purchase.')
+                log.pop(self.config, 'Executed purchase.')
                 log.i(self.config, 'finished with status code %d' % response.status_code)
             else:
                 log.e(self.config, 'failed with status code %d' % response.status_code)

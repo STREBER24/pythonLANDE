@@ -148,16 +148,18 @@ class LandeSession(requests.Session):
             log.i(self.config, 'starting autoinvest ...')
             for i in offers:
                   if i.matchesAutoinvest():
-                        amount = self.config.autoinvestAmount[1]
-                        for j in investments.index:
-                              if investments['ID'][j] == i.id:
-                                    amount -= investments['Remaining Investment Amount'][j]
-                        if amount > self.config.autoinvestAmount[0] and amount > i.minimumInvest:
-                              self.downloadLoan(i.id, self.config.loanFile)
-                              amount = min(amount, i.availableAmount, balance)
-                              log.i(self.config, 'investing %.2f€ in loan %s ...' % (amount, i.id))
-                              i.buy(self, amount)
-                              return True
+                        i.parseWebsite(session.downloadLoan(i.id, config.loanFile))
+                        if i.matchesAutoinvest():
+                              amount = self.config.autoinvestAmount[1]
+                              for j in investments.index:
+                                    if investments['ID'][j] == i.id:
+                                          amount -= investments['Remaining Investment Amount'][j]
+                              if amount > self.config.autoinvestAmount[0] and amount > i.minimumInvest:
+                                    self.downloadLoan(i.id, self.config.loanFile)
+                                    amount = min(amount, i.availableAmount, balance)
+                                    log.i(self.config, 'investing %.2f€ in loan %s ...' % (amount, i.id))
+                                    i.buy(self, amount)
+                                    return True
             log.v(self.config, 'autoinvest finished because no matching offer was found')
             return False
             

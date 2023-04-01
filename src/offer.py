@@ -63,11 +63,14 @@ class Offer():
         return (full-funded, full)
     def matchesAutoinvest(self):
         if self.config.autoinvestAmount[0] > self.availableAmount: return False
+        if not matchRange(self.config.autoinvestNextPayment, self.nextPayment): return False
         if not matchRange(self.config.autoinvestRemaining, self.remaining): return False
         if not matchRange(self.config.autoinvestInterest, self.interest): return False
         if not matchRange(self.config.autoinvestLtv, self.ltv): return False
         if self.status not in self.config.autoinvestStatus: return False
         if self.collateral not in self.config.autoinvestCollateral: return False
+        if self.comments == [] and not self.config.autoinvestAllowComments: return False
+        if self.updates == [] and not self.config.autoinvestAllowUpdates: return False
         return True 
     def parseWebsite(self, html):
         log.v(self.config, 'parsing loan file ...')

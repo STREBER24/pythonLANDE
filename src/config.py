@@ -24,6 +24,9 @@ DEFAULT = {
     'autoinvestLtv': (None, 55),
     'autoinvestStatus': ['current'],
     'autoinvestCollateral': ['land', 'financial', 'livestock', 'machinery', 'harvest'],
+    'autoinvestAllowComments': False,
+    'autoinvestAllowUpdates': False,
+    'autoinvestNextPayment': (1, None),
     'checkUpdates': True,
     'notification': 'plyer'}
 
@@ -53,6 +56,9 @@ class Configuration:
             'autoinvestLtv': self.autoinvestLtv,
             'autoinvestStatus': self.autoinvestStatus,
             'autoinvestCollateral': self.autoinvestCollateral,
+            'autoinvestAllowComments': self.autoinvestAllowComments,
+            'autoinvestAllowUpdates': self.autoinvestAllowUpdates,
+            'autoinvestNextPayment': self.autoinvestNextPayment,
             'checkUpdates': self.checkUpdates,
             'notification': self.notification}
         file = io.open(FILENAME, 'w', encoding='utf8')
@@ -96,6 +102,9 @@ class Configuration:
         self.autoinvestLtv = self.get(data, 'autoinvestLtv')
         self.autoinvestStatus = self.get(data, 'autoinvestStatus')
         self.autoinvestCollateral = self.get(data, 'autoinvestCollateral')
+        self.autoinvestAllowComments = self.get(data, 'autoinvestAllowComments')
+        self.autoinvestAllowUpdates = self.get(data, 'autoinvestAllowUpdates')
+        self.autoinvestNextPayment = self.get(data, 'autoinvestNextPayment')
         self.checkUpdates = self.get(data, 'checkUpdates')
         self.notification = self.get(data, 'notification')
 

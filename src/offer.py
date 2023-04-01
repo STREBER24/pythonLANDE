@@ -63,7 +63,7 @@ class Offer():
         full = float(parts[1].strip()[1:].replace(',',''))
         return (full-funded, full)
     def matchesAutoinvest(self):
-        if self.config.autoinvestAmount[0] > self.amount: return False
+        if self.config.autoinvestAmount[0] > self.availableAmount: return False
         if not matchRange(self.config.autoinvestRemaining, self.remaining): return False
         if not matchRange(self.config.autoinvestInterest, self.interest): return False
         if not matchRange(self.config.autoinvestLtv, self.ltv): return False

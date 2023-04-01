@@ -4,7 +4,7 @@ import json
 import log
 
 URL = 'https://api.github.com/repos/STREBER24/pythonLANDE/releases/latest'
-VERSION = 'v1.1'
+VERSION = 'v1.1.1'
 
 def latest(config: Configuration):
     log.v(config, 'checking for updates ...')

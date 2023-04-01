@@ -162,6 +162,13 @@ class LandeSession(requests.Session):
                                     return True
             log.v(self.config, 'autoinvest finished because no matching offer was found')
             return False
+      def logout(self):
+            soup = bs4.BeautifulSoup(self.get(self.config.link).content, 'html.parser')
+            token = soup.find('form', {'id': 'logout-form'}).find('input').get('value')
+            log.v(self.config, 'found logout-token %s' % token)
+            log.i(self.config, 'sending logout ...')
+            self.post(self.config.link + 'logout', data={'_token': token})
+            self.authenticated = False
             
 
 if __name__ == '__main__':

@@ -40,7 +40,8 @@ if __name__ == '__main__':
       session.getContracts(config.contractsFile)
       request.saveJson([i.toDict() for i in primaryOffers], config.primaryMarketFile % date, config)
       request.saveJson([i.toDict() for i in secondaryOffers], config.secondaryMarketFile % date, config)
-                        
+                 
+      session.logout()       
       session.close()
       log.i(config, 'finished main routine')
       log.pop(config, 'Executed LANDE AutoInvest sucessfully.')

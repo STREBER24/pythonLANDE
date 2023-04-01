@@ -151,7 +151,7 @@ class LandeSession(requests.Session):
                         for j in investments.index:
                               if investments['ID'][j] == i.id:
                                     amount -= investments['Remaining Investment Amount'][j]
-                        if amount > self.config.autoinvestAmount[0]:
+                        if amount > self.config.autoinvestAmount[0] and amount > i.minimumInvest:
                               self.downloadLoan(i.id, self.config.loanFile)
                               amount = min(amount, i.availableAmount, balance)
                               log.i(self.config, 'investing %.2f€ in loan %s ...' % (amount, i.id))

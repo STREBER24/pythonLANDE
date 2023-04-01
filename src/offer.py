@@ -17,6 +17,7 @@ class Offer():
         self.fullAmount = None
         self.status = None
         self.interest = None
+        self.minimumInvest = None
     def toDict(self):
         return {
             'id': self.id,
@@ -27,7 +28,8 @@ class Offer():
             'status': self.status,
             'amount': {
                 'available': self.availableAmount,
-                'full': self.fullAmount}}
+                'full': self.fullAmount,
+                'minimum': self.minimumInvest}}
     def parseInterest(self, text: str):
         if re.fullmatch('^[0-9]+%$', text): 
             return int(text[:-1])
@@ -61,7 +63,7 @@ class Offer():
         if self.collateral not in self.config.autoinvestCollateral: return False
         return True 
     def buy(self, session: requests.Session, amount: float):
-        raise NotImplementedError
+        raise NotImplementedError('Offer is an abstract class')
 
 
 class SecondaryOffer(Offer):
@@ -76,6 +78,7 @@ class SecondaryOffer(Offer):
         self.status = self.data[7].text.strip().lower()
         self.availableAmount = self.parseAmount(self.data[8].text)
         self.buyLink = str(self.data[9].find('a').get('href'))
+        self.minimumInvest = 0
     def buy(self, session: requests.Session, amount: float):
         response = session.get(self.buyLink)
         token = None
@@ -109,6 +112,7 @@ class PrimaryOffer(Offer):
         self.availableAmount, self.fullAmount = self.parsePartialAmount(self.data[3].text)
         self.buyLink = str(self.data[7].find('a').get('href'))
         self.status = 'funding' if self.data[7].find('a').text.strip().lower()=='invest' else None
+        self.minimumInvest = 50
     def buy(self, session: requests.Session, amount: float):
         response = session.get(self.config.link + 'loans/' + self.id)
         token = None

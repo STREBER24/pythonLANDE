@@ -97,9 +97,10 @@ class LandeSession(requests.Session):
             log.ensureDir(self.config, filename)
             response = self.get(link)
             io.open(filename, 'wb').write(response.content)
+            return response.content
       def downloadLoan(self, id: str, filePattern: str):
             log.i(self.config, 'downloading raw loan page %s' % id)
-            self.download(self.config.link + 'loans/' + id, filePattern % id)
+            return self.download(self.config.link + 'loans/' + id, filePattern % id)
       def getContracts(self, filename: str=''):
             links = self.getContractLinks()
             log.i(self.config, 'downloading all contracts ...')

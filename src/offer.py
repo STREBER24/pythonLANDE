@@ -1,4 +1,5 @@
 from config import Configuration
+from datetime import datetime
 import requests
 import log
 import bs4
@@ -18,6 +19,9 @@ class Offer():
         self.status = None
         self.interest = None
         self.minimumInvest = None
+        self.comments = None
+        self.updates = None
+        self.nextPayment = None
     def toDict(self):
         return {
             'id': self.id,
@@ -26,6 +30,9 @@ class Offer():
             'remaining': self.remaining,
             'ltv': self.ltv,
             'status': self.status,
+            'comments': self.comments,
+            'updates': self.updates,
+            'nextPayment': self.nextPayment,
             'amount': {
                 'available': self.availableAmount,
                 'full': self.fullAmount,
@@ -62,6 +69,28 @@ class Offer():
         if self.status not in self.config.autoinvestStatus: return False
         if self.collateral not in self.config.autoinvestCollateral: return False
         return True 
+    def parseWebsite(self, html):
+        log.v(self.config, 'parsing loan file ...')
+        soup = bs4.BeautifulSoup(html, 'html.parser')
+        self.comments = []
+        for i in soup.find_all('div', {'id': 'comments'})[-1].find('div').contents:
+            if type(i) == bs4.element.Tag and i.name == 'div':
+                self.comments.append({
+                    'text': i.find('div').text.strip(),
+                    'info': [j.text.strip() for j in i.find_all('div', {'class': ''})]})
+        self.updates = []
+        modal = soup.find('div', {'id': 'loanUpdate'})
+        if modal != None:
+            div = modal.find('div', {'class': 'modal-body'})
+            for date, text in zip(div.find_all('span', {'class': 'small'}), div.find_all('div')):
+                self.updates.append({'text': text.text.strip(), 'date': date.text.strip()})
+        payments = soup.find('div', {'id': 'schedule'}).find_all('tbody')[-1].find_all('tr')
+        self.nextPayment = None
+        for i in payments:
+            cells = i.find_all('td')
+            date = datetime.strptime(cells[1].text.strip(), '%d.%m.%Y').toordinal() - datetime.now().toordinal()
+            if cells[5].find('img') == None and (self.nextPayment == None or self.nextPayment > date):
+                self.nextPayment = date
     def buy(self, session: requests.Session, amount: float):
         raise NotImplementedError('Offer is an abstract class')
 

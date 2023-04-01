@@ -46,14 +46,15 @@ class LandeSession(requests.Session):
             self.authenticated = False
             log.i(self.config, 'initiating LandeSession ...')
             super().__init__()
+            self.login(auth)
+      def login(self, auth: dict):
             response = self.get(self.config.link + 'login')
             soup = bs4.BeautifulSoup(response.content, 'html.parser')
-            for input in soup.find_all('input'):
-                  if input.get('name') == '_token':
-                        auth['_token'] = input.get('value')
+            auth['_token'] = soup.find('input', {'name': '_token'}).get('value')
             log.v(self.config, 'found token ' + str(auth['_token']))
             response = self.post(self.config.link + 'login', data=auth)
             if bs4.BeautifulSoup(response.content, 'html.parser').find('form', attrs={'action': 'https://lande.finance/logout'}) == None:
+                  self.authenticated = False
                   log.e(self.config, 'login failed')
             else:
                   self.authenticated = True

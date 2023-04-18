@@ -50,9 +50,9 @@ class Offer():
             return int(text[:-1])
         log.w(self.config, 'invalid ltv: "%s"' % text)
     def parseAmount(self, text: str):
-        text = text.strip().lower()
-        if re.fullmatch('^€[0-9]+(,[0-9][0-9][0-9])*.[0-9][0-9]+$', text): 
-            return float(text[1:].replace(',',''))
+        text = text.replace('€','').strip().lower()
+        if re.fullmatch('^[0-9]+(,[0-9][0-9][0-9])*.[0-9][0-9]+$', text): 
+            return float(text.replace(',',''))
         log.w(self.config, 'invalid amount: "%s"' % text)
     def parsePartialAmount(self, text: str):
         parts = text.split('/')

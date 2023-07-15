@@ -149,7 +149,7 @@ class LandeSession(requests.Session):
             log.i(self.config, 'starting autoinvest ...')
             for i in offers:
                   if i.matchesAutoinvest():
-                        i.parseWebsite(session.downloadLoan(i.id, config.loanFile))
+                        i.parseWebsite(self.downloadLoan(i.id, self.config.loanFile))
                         if i.matchesAutoinvest():
                               amount = self.config.autoinvestAmount[1]
                               for j in investments.index:

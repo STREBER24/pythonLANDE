@@ -19,7 +19,6 @@ class Offer():
         self.status = None
         self.interest = None
         self.minimumInvest = None
-        self.comments = None
         self.updates = None
         self.nextPayment = None
     def toDict(self):
@@ -30,7 +29,6 @@ class Offer():
             'remaining': self.remaining,
             'ltv': self.ltv,
             'status': self.status,
-            'comments': self.comments,
             'updates': self.updates,
             'nextPayment': self.nextPayment,
             'amount': {
@@ -63,24 +61,17 @@ class Offer():
         return (full-funded, full)
     def matchesAutoinvest(self):
         if self.config.autoinvestAmount[0] > self.availableAmount: return False
-        if not matchRange(self.config.autoinvestNextPayment, self.nextPayment): return False
+        if not matchRange(self.config.autoinvestNextPayment, self.nextPayment, allowNone=True): return False
         if not matchRange(self.config.autoinvestRemaining, self.remaining): return False
         if not matchRange(self.config.autoinvestInterest, self.interest): return False
         if not matchRange(self.config.autoinvestLtv, self.ltv): return False
         if self.status not in self.config.autoinvestStatus: return False
         if self.collateral not in self.config.autoinvestCollateral: return False
-        if self.comments == [] and not self.config.autoinvestAllowComments: return False
         if self.updates == [] and not self.config.autoinvestAllowUpdates: return False
         return True 
     def parseWebsite(self, html):
         log.v(self.config, 'parsing loan file ...')
         soup = bs4.BeautifulSoup(html, 'html.parser')
-        self.comments = []
-        for i in soup.find_all('div', {'id': 'comments'})[-1].find('div').contents:
-            if type(i) == bs4.element.Tag and i.name == 'div':
-                self.comments.append({
-                    'text': i.find('div').text.strip(),
-                    'info': [j.text.strip() for j in i.find_all('div', {'class': ''})]})
         self.updates = []
         modal = soup.find('div', {'id': 'loanUpdate'})
         if modal != None:
@@ -166,9 +157,11 @@ class PrimaryOffer(Offer):
             raise NotImplementedError
     
 
-def matchRange(range: tuple[int|float|None, int|float|None], value: int|float):
-      if range[0] != None and range[0] > value:
-            return False
-      if range[1] != None and range[1] < value:
-            return False
-      return True
+def matchRange(range: tuple[int|float|None, int|float|None], value: int|float|None, allowNone=False):
+    if value == None:
+        return allowNone
+    if range[0] != None and range[0] > value:
+        return False
+    if range[1] != None and range[1] < value:
+        return False
+    return True

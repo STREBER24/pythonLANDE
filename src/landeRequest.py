@@ -131,7 +131,7 @@ class LandeSession(requests.Session):
                   log.v(self.config, 'loading page %d ...' % page)
                   response = self.get(self.config.link + 'investor/loans', params={'page': page})
                   soup = bs4.BeautifulSoup(response.content , 'html.parser')
-                  table = soup.find('table')
+                  table = soup.find('div', {'class': 'table-responsive'}).find('table')
                   newOffers = [offer.PrimaryOffer(self.config, i) for i in table.find_all('tr')[1:]]
                   if not all:
                         newOffers = list(filter(lambda x: x.status != None, newOffers))

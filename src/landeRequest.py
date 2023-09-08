@@ -62,13 +62,13 @@ class LandeSession(requests.Session):
       def getTransactions(self):
             log.i(self.config, 'fetching transaction export ...')
             response = self.get(self.config.link + 'investor/transactions/export')
-            dataframe = pd.read_excel(response.content)
+            dataframe = pd.read_excel(io.BytesIO(response.content))
             log.v(self.config, 'fetching finished')
             return dataframe
       def getInvestments(self):
             log.i(self.config, 'fetching investments export ...')
             response = self.get(self.config.link + 'investor/reports/investments')
-            dataframe = pd.read_excel(response.content)
+            dataframe = pd.read_excel(io.BytesIO(response.content))
             log.v(self.config, 'fetching finished')
             return dataframe
       def getProfile(self):

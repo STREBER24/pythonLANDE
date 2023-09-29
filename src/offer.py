@@ -67,7 +67,7 @@ class Offer():
         if not matchRange(self.config.autoinvestLtv, self.ltv): return False
         if self.status not in self.config.autoinvestStatus: return False
         if self.collateral not in self.config.autoinvestCollateral: return False
-        if self.updates == [] and not self.config.autoinvestAllowUpdates: return False
+        if type(self.updates)==list and len(self.updates)>0 and not self.config.autoinvestAllowUpdates: return False
         return True 
     def parseWebsite(self, html):
         log.v(self.config, 'parsing loan file ...')

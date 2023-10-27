@@ -6,6 +6,10 @@ import bs4
 import re
 
 
+def getLink(tag: bs4.Tag):
+    a = tag.find('a')
+    if a != None: return str(a.get('href'))
+
 class Offer():
     def __init__(self, config: Configuration):
         self.data: list[bs4.element.Tag] = []
@@ -15,6 +19,7 @@ class Offer():
         self.remaining = None
         self.ltv = None
         self.availableAmount = None
+        self.buyLink = None
         self.fullAmount = None
         self.status = None
         self.interest = None
@@ -68,6 +73,7 @@ class Offer():
         if self.status not in self.config.autoinvestStatus: return False
         if self.collateral not in self.config.autoinvestCollateral: return False
         if type(self.updates)==list and len(self.updates)>0 and not self.config.autoinvestAllowUpdates: return False
+        if self.buyLink == None: return False
         return True 
     def parseWebsite(self, html):
         log.v(self.config, 'parsing loan file ...')
@@ -100,7 +106,7 @@ class SecondaryOffer(Offer):
         self.ltv = self.parseLtv(self.data[6].text.strip().lower())
         self.status = self.data[7].text.strip().lower()
         self.availableAmount = self.parseAmount(self.data[8].text)
-        self.buyLink = str(self.data[9].find('a').get('href'))
+        self.buyLink = getLink(self.data[9])
         self.minimumInvest = 0
     def buy(self, session: requests.Session, amount: float):
         response = session.get(self.buyLink)
@@ -133,7 +139,7 @@ class PrimaryOffer(Offer):
         self.remaining = self.parseRemaining(self.data[6].text.strip().lower())
         self.ltv = self.parseLtv(self.data[5].text.strip().lower())
         self.availableAmount, self.fullAmount = self.parsePartialAmount(self.data[3].text)
-        self.buyLink = str(self.data[7].find('a').get('href'))
+        self.buyLink = getLink(self.data[7])
         self.status = 'funding' if self.data[7].find('a').text.strip().lower()=='invest' else None
         self.minimumInvest = 50
     def buy(self, session: requests.Session, amount: float):

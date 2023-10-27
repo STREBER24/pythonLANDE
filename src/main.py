@@ -4,8 +4,7 @@ import credentials
 import updater
 import log
 
-if __name__ == '__main__':
-      config = Configuration()
+def run(config: Configuration):
       if not config.load(): 
             config.autoinvestEnabled = log.confirm(config, 'Enable AutoInvest?')
             config.save()
@@ -45,3 +44,11 @@ if __name__ == '__main__':
       session.close()
       log.i(config, 'finished main routine')
       log.pop(config, 'Executed LANDE AutoInvest sucessfully.')
+      
+if __name__ == '__main__':
+      try:
+            config = Configuration()
+            run(config)
+      except Exception as e:
+            log.e(config, f'{e}')
+            input('press key to exit ...')

@@ -6,6 +6,7 @@ import offer
 import json
 import log
 import bs4
+import os
 import io
 
 
@@ -93,7 +94,10 @@ class LandeSession(requests.Session):
                         links.append(tag.get('href')[len(self.config.link)+21:])
             log.v(self.config, 'fetching finished: found %d links' % len(links))
             return links
-      def download(self, link: str, filename: str):
+      def download(self, link: str, filename: str, force: bool=False):
+            if os.path.isfile(filename) and not force:
+                  log.v(self.config, 'skip download because file already exists')
+                  return
             log.v(self.config, 'downloading file from %s' % link)
             log.ensureDir(self.config, filename)
             response = self.get(link)
@@ -101,12 +105,13 @@ class LandeSession(requests.Session):
             return response.content
       def downloadLoan(self, id: str, filePattern: str):
             log.i(self.config, 'downloading raw loan page %s' % id)
-            return self.download(self.config.link + 'loans/' + id, filePattern % id)
+            return self.download(self.config.link + 'loans/' + id, filePattern % id, force=True)
       def getContracts(self, filename: str=''):
             links = self.getContractLinks()
             log.i(self.config, 'downloading all contracts ...')
             for link in links:
                   self.download(self.config.link + 'investor/investments/' + link, filename % link)
+            log.v(self.config, 'downloading contracts finished')
       def getSecondaryMarketInfo(self):
             log.i(self.config, 'fetching secondary market info ...')
             newOffers = [None]
@@ -176,5 +181,6 @@ if __name__ == '__main__':
       config = Configuration()
       session = LandeSession(config)
       session.getPrimaryMarketInfo()[0].buy(session, 1)
+      session.logout()
       session.close()
       

@@ -33,7 +33,6 @@ def storeCredentials(mail: str, pswd: str):
     log.i('saved credentials to %s' % keyring_platform.config_root())
     
 
-
 def getCredentials(config: Configuration):
     log.i(config, 'loading credentials ...')
     mail = keyring.get_password(NAMESPACE, MAIL)

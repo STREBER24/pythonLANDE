@@ -121,8 +121,12 @@ class LandeSession(requests.Session):
                   log.v(self.config, 'loading page %d ...' % page)
                   response = self.get(self.config.link + 'investor/secondary-market', params={'page': page})
                   soup = bs4.BeautifulSoup(response.content , 'html.parser')
-                  table = soup.find('table').find('tbody')
-                  newOffers = [offer.SecondaryOffer(self.config, i) for i in table.find_all('tr')]
+                  if soup.find('table') == None:
+                        log.w(self.config, 'no table found on secondary market')
+                        newOffers = []
+                  else:
+                        table = soup.find('table').find('tbody')
+                        newOffers = [offer.SecondaryOffer(self.config, i) for i in table.find_all('tr')]
                   offers += newOffers
                   page += 1
             log.v(self.config, 'fetching finished: found %d offers' % len(offers))

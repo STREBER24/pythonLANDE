@@ -23,7 +23,7 @@ DEFAULT = {
     'autoinvestInterest': (11, None),
     'autoinvestLtv': (None, 55),
     'autoinvestStatus': ['current'],
-    'autoinvestCollateral': ['land', 'financial', 'livestock', 'machinery', 'harvest'],
+    'autoinvestCollateral': ['land', 'financial', 'cattle', 'livestock', 'machinery', 'harvest'],
     'autoinvestAllowUpdates': False,
     'autoinvestNextPayment': (1, None),
     'checkUpdates': True,

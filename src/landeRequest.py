@@ -40,8 +40,8 @@ class Profile():
 
 
 class LandeSession(requests.Session):
-      def __init__(self, config: Configuration, auth: dict=None):
-            if auth == None:
+      def __init__(self, config: Configuration, auth: dict={}):
+            if auth == {}:
                   auth = credentials.getCredentials(config)
             self.config = config
             self.authenticated = False
@@ -51,7 +51,10 @@ class LandeSession(requests.Session):
       def login(self, auth: dict):
             response = self.get(self.config.link + 'login')
             soup = bs4.BeautifulSoup(response.content, 'html.parser')
-            auth['_token'] = soup.find('input', {'name': '_token'}).get('value')
+            tokeninput = soup.find('input', {'name': '_token'})
+            if not isinstance(tokeninput, bs4.element.Tag):
+                  log.e(self.config, 'no token input for login found'); return
+            auth['_token'] = tokeninput.get('value')
             log.v(self.config, 'found token ' + str(auth['_token']))
             response = self.post(self.config.link + 'login', data=auth)
             if bs4.BeautifulSoup(response.content, 'html.parser').find('form', attrs={'action': 'https://lande.finance/logout'}) == None:
@@ -114,36 +117,41 @@ class LandeSession(requests.Session):
             log.v(self.config, 'downloading contracts finished')
       def getSecondaryMarketInfo(self):
             log.i(self.config, 'fetching secondary market info ...')
-            newOffers = [None]
+            newOffers: list[offer.SecondaryOffer] = []
             offers: list[offer.SecondaryOffer] = []
             page = 1
-            while len(newOffers) > 0:
+            while len(newOffers) > 0 or page == 1:
                   log.v(self.config, 'loading page %d ...' % page)
                   response = self.get(self.config.link + 'investor/secondary-market', params={'page': page})
                   soup = bs4.BeautifulSoup(response.content , 'html.parser')
-                  if soup.find('table') == None:
+                  table = soup.find('table')
+                  if not isinstance(table, bs4.element.Tag):
                         log.w(self.config, 'no table found on secondary market')
-                        newOffers = []
-                  else:
-                        table = soup.find('table').find('tbody')
-                        newOffers = [offer.SecondaryOffer(self.config, i) for i in table.find_all('tr')]
+                        page += 1; continue
+                  table = table.find('tbody')
+                  if not isinstance(table, bs4.element.Tag):
+                        log.w(self.config, 'no table found on secondary market')
+                        page += 1; continue
+                  newOffers = [offer.SecondaryOffer(self.config, i) for i in table.find_all('tr')]
                   offers += newOffers
                   page += 1
             log.v(self.config, 'fetching finished: found %d offers' % len(offers))
             return offers
       def getPrimaryMarketInfo(self, all=False):
             log.i(self.config, 'fetching primary market info ...')
-            newOffers = [None]
+            newOffers: list[offer.PrimaryOffer] = []
             offers: list[offer.PrimaryOffer] = []
             page = 1
-            while len(newOffers) > 0:
+            while len(newOffers) > 0 or page == 1:
                   log.v(self.config, 'loading page %d ...' % page)
                   response = self.get(self.config.link + 'investor/loans', params={'page': page})
                   soup = bs4.BeautifulSoup(response.content , 'html.parser')
                   table = soup.find('div', {'class': 'table-responsive'}).find('table')
+                  if not isinstance(table, bs4.element.Tag):
+                        log.w(self.config, 'no table found'); continue
                   newOffers = [offer.PrimaryOffer(self.config, i) for i in table.find_all('tr')[1:]]
                   if not all:
-                        newOffers = list(filter(lambda x: x.status != None, newOffers))
+                        newOffers = list(filter(lambda x: x.status is not None, newOffers))
                   offers += newOffers
                   page += 1
             log.v(self.config, 'fetching finished: found %d offers' % len(offers))
@@ -174,7 +182,10 @@ class LandeSession(requests.Session):
             return False
       def logout(self):
             soup = bs4.BeautifulSoup(self.get(self.config.link).content, 'html.parser')
-            token = soup.find('form', {'id': 'logout-form'}).find('input').get('value')
+            logouttokeninput = soup.find('form', {'id': 'logout-form'}).find('input')
+            if not isinstance(logouttokeninput, bs4.element.Tag):
+                  log.e(self.config, 'logout failed because no logouttoken was found'); return
+            token = logouttokeninput.get('value')
             log.v(self.config, 'found logout-token %s' % token)
             log.i(self.config, 'sending logout ...')
             self.post(self.config.link + 'logout', data={'_token': token})

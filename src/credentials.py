@@ -21,16 +21,16 @@ def saveCredentials(config: Configuration):
     pswd = tk.Entry(root, show='*')
     pswd.grid(row=1, column=1, pady=2)
     def submit():
-        storeCredentials(mail.get(), pswd.get())
+        storeCredentials(config, mail.get(), pswd.get())
         root.destroy()
     tk.Button(root, text='Save', command=submit).grid(row=2, column=0, pady=2, columnspan=2)
     root.mainloop()
 
 
-def storeCredentials(mail: str, pswd: str):
+def storeCredentials(config: Configuration, mail: str, pswd: str):
     keyring.set_password(NAMESPACE, MAIL, mail)
     keyring.set_password(NAMESPACE, PSWD, pswd)
-    log.i('saved credentials to %s' % keyring_platform.config_root())
+    log.i(config, 'saved credentials to %s' % keyring_platform.config_root())
     
 
 def getCredentials(config: Configuration):
@@ -38,9 +38,9 @@ def getCredentials(config: Configuration):
     mail = keyring.get_password(NAMESPACE, MAIL)
     pswd = keyring.get_password(NAMESPACE, PSWD)
     if mail in [None, ''] or pswd in [None, '']:
-        log.w('loading credentials retuned null')
-        saveCredentials()
-        return getCredentials()
+        log.w(config, 'loading credentials retuned null')
+        saveCredentials(config)
+        return getCredentials(config)
     return {'email': mail, 'password': pswd}
 
 

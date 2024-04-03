@@ -1,5 +1,6 @@
 from config import Configuration
 from datetime import datetime
+from abc import ABC, abstractmethod
 import requests
 import log
 import bs4
@@ -8,23 +9,23 @@ import re
 
 def getLink(tag: bs4.Tag):
     a = tag.find('a')
-    if a != None: return str(a.get('href'))
+    if isinstance(a, bs4.element.Tag): return str(a.get('href'))
 
-class Offer():
+class Offer(ABC):
     def __init__(self, config: Configuration):
         self.data: list[bs4.element.Tag] = []
         self.config = config
-        self.id = None
-        self.collateral = None
-        self.remaining = None
+        self.id: str
+        self.collateral: str
+        self.remaining: int|None
         self.ltv = None
         self.availableAmount = None
         self.buyLink = None
         self.fullAmount = None
-        self.status = None
+        self.status: str|None = None
         self.interest = None
-        self.minimumInvest = None
-        self.updates = None
+        self.minimumInvest: int|None
+        self.updates: list[dict] = []
         self.nextPayment = None
     def toDict(self):
         return {
@@ -72,7 +73,7 @@ class Offer():
         if not matchRange(self.config.autoinvestLtv, self.ltv): return False
         if self.status not in self.config.autoinvestStatus: return False
         if self.collateral not in self.config.autoinvestCollateral: return False
-        if type(self.updates)==list and len(self.updates)>0 and not self.config.autoinvestAllowUpdates: return False
+        if type(self.updates) is list and len(self.updates)>0 and not self.config.autoinvestAllowUpdates: return False
         if self.buyLink == None: return False
         return True 
     def parseWebsite(self, html):
@@ -80,17 +81,22 @@ class Offer():
         soup = bs4.BeautifulSoup(html, 'html.parser')
         self.updates = []
         modal = soup.find('div', {'id': 'loanUpdate'})
-        if modal != None:
+        if isinstance(modal, bs4.element.Tag):
             div = modal.find('div', {'class': 'modal-body'})
-            for date, text in zip(div.find_all('span', {'class': 'small'}), div.find_all('div')):
-                self.updates.append({'text': text.text.strip(), 'date': date.text.strip()})
-        payments = soup.find('div', {'id': 'schedule'}).find_all('tbody')[-1].find_all('tr')
+            if isinstance(div, bs4.element.Tag):
+                for date, text in zip(div.find_all('span', {'class': 'small'}), div.find_all('div')):
+                    self.updates.append({'text': text.text.strip(), 'date': date.text.strip()})
+        schedule = soup.find('div', {'id': 'schedule'})
+        if not isinstance(schedule, bs4.element.Tag):
+            log.w(self.config, f'no schedule found for offer with id {self.id}'); return
+        payments = schedule.find_all('tbody')[-1].find_all('tr')
         self.nextPayment = None
         for i in payments:
             cells = i.find_all('td')
             date = datetime.strptime(cells[1].text.strip(), '%d.%m.%Y').toordinal() - datetime.now().toordinal()
             if cells[5].find('img') == None and (self.nextPayment == None or self.nextPayment > date):
                 self.nextPayment = date
+    @abstractmethod
     def buy(self, session: requests.Session, amount: float):
         raise NotImplementedError('Offer is an abstract class')
 
@@ -109,6 +115,9 @@ class SecondaryOffer(Offer):
         self.buyLink = getLink(self.data[9])
         self.minimumInvest = 0
     def buy(self, session: requests.Session, amount: float):
+        if self.buyLink is None:
+            log.e(self.config, 'tried to buy offer without buyLink')
+            return
         response = session.get(self.buyLink)
         token = None
         for form in bs4.BeautifulSoup(response.content , 'html.parser').find_all('form'):
@@ -147,8 +156,8 @@ class PrimaryOffer(Offer):
         token = None
         investmentCount = None
         form = bs4.BeautifulSoup(response.content , 'html.parser').find('form', {'id': 'investment-form'})
-        if form == None:
-            log.e(self.config, 'no logout form found')
+        if not isinstance(form, bs4.element.Tag):
+            log.e(self.config, 'no investment form found'); return
         for i in form.find_all('input'):
             if i.get('name') == '_token':
                 token = i.get('value')
@@ -164,10 +173,11 @@ class PrimaryOffer(Offer):
     
 
 def matchRange(range: tuple[int|float|None, int|float|None], value: int|float|None, allowNone=False):
-    if value == None:
+    if value is None:
         return allowNone
-    if range[0] != None and range[0] > value:
+    left, right = range
+    if left is not None and left > value:
         return False
-    if range[1] != None and range[1] < value:
+    if right is not None and right < value:
         return False
     return True

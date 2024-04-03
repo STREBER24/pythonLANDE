@@ -1,6 +1,7 @@
 from config import Configuration, FILENAME
 import landeRequest as request
 import credentials
+import traceback
 import updater
 import log
 
@@ -18,7 +19,7 @@ def run(config: Configuration):
       date = log.getTimeString(config)
       
       while not session.authenticated:
-            credentials.saveCredentials()
+            credentials.saveCredentials(config)
             session = request.LandeSession(config)
       
       invest = True
@@ -50,5 +51,4 @@ if __name__ == '__main__':
             config = Configuration()
             run(config)
       except Exception as e:
-            log.e(config, f'{e}')
-            input('press key to exit ...')
+            log.e(config, traceback.format_exc())
